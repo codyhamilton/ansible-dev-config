@@ -1,0 +1,4 @@
+---
+# handlers file for dev-tools
+- name: update vim plugins
+  command: vim +PlugInstall +qall

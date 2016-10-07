@@ -1,0 +1,13 @@
+---
+
+- name: install VimPlug to manage plugins
+  copy:
+    src: "files/plug.vim"
+    dest: "{{ ansible_env.HOME }}/.vim/autoload/plug.vim"
+
+- name: copy vimrc to user home folder
+  copy:
+    backup: yes
+    src: "files/vimrc"
+    dest: "{{ ansible_env.HOME }}/.vimrc"
+  notify: update vim plugins

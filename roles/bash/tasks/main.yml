@@ -1,0 +1,19 @@
+---
+# Install various bash scripts
+
+- name: copy bash scripts into home folder
+  copy:
+    backup: yes
+    src: "files/"
+    dest: "{{ ansible_env.HOME }}/.bashrc.d"
+
+- name: ensure scripts in bashrc.d are run in bash_profile
+  blockinfile:
+    backup: yes
+    dest: "{{ ansible_env.HOME }}/.bash_profile"
+    create: yes
+    insertafter: EOF
+    block: |
+      for file in {{ ansible_env.HOME }}/.bashrc.d/*.sh; do
+        source $file;
+      done;

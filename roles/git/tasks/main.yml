@@ -1,0 +1,47 @@
+---
+# Install git and related configuration
+
+- name: copy git bash scripts into home folder
+  copy:
+    backup: yes
+    src: "files/{{ item.src }}"
+    dest: "{{ ansible_env.HOME }}/{{ item.dest }}"
+  with_items:
+    - { src: 'git-prompt-colors.sh', dest: '.git-prompt-colors.sh' }
+    - { src: 'gitcomplete.sh', dest: '.bashrc.d/gitcomplete.sh' }
+    - { src: 'gitprompt.sh', dest: '.bashrc.d/gitprompt.sh' }
+
+- name: Ensure git is installed
+  package:
+    name: git
+    state: present
+
+- name: configure git
+  git_config:
+    scope: global
+    name: "{{ item.option }}"
+    value: "{{ item.value }}"
+  with_items:
+    - { option: 'push.default', value: 'simple' }
+    - { option: 'core.editor', value: 'vim' }
+
+- name: add git aliases
+  git_config:
+    scope: global
+    name: "alias.{{ item.alias }}"
+    value: "{{ item.value }}"
+  with_items:
+    - { alias: 'll', value: 'log --graph --oneline --decorate --branches --tags' }
+    - { alias: 'lgb', value: "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n' --abbrev-commit --date=relative --branches" }
+    - { alias: 'bl', value: 'branch --list' }
+    - { alias: 'co', value: 'checkout' }
+    - { alias: 'rbl', value: 'remote show origin' }
+    - { alias: 'fix', value: 'commit --fixup @' }
+    - { alias: 'squash', value: 'commit --squash @' }
+
+- name: Install gitprompt
+  git:
+    repo: "https://github.com/magicmonty/bash-git-prompt.git"
+    dest: "{{ ansible_env.HOME }}/.bashrc.d/git-prompt"
+    depth: 1
+    version: "{{ gitprompt.version }}"
