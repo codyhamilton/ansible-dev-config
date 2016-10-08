@@ -1,4 +1,5 @@
 ---
 # handlers file for dev-tools
 - name: update vim plugins
-  command: vim +PlugInstall +qall
+  raw: vim -E -s -c 'source {{ ansible_env.HOME }}/.vim/plugins.vim' -c PlugInstall -c qa -V
+  when: false
