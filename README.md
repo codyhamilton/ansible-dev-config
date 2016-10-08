@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/lonectzn/ansible-dev-config.svg?branch=master)](https://travis-ci.org/lonectzn/ansible-dev-config)
 Ansible Dev Config Tool
 =======================
 
