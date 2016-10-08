@@ -11,11 +11,6 @@
     - { src: 'gitcomplete.sh', dest: '.bashrc.d/gitcomplete.sh' }
     - { src: 'gitprompt.sh', dest: '.bashrc.d/gitprompt.sh' }
 
-- name: Ensure git is installed
-  package:
-    name: git
-    state: present
-
 - name: configure git
   git_config:
     scope: global
@@ -32,7 +27,6 @@
     value: "{{ item.value }}"
   with_items:
     - { alias: 'll', value: 'log --graph --oneline --decorate --branches --tags' }
-    - { alias: 'lgb', value: "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n' --abbrev-commit --date=relative --branches" }
     - { alias: 'bl', value: 'branch --list' }
     - { alias: 'co', value: 'checkout' }
     - { alias: 'rbl', value: 'remote show origin' }

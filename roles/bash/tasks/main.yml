@@ -10,7 +10,7 @@
 - name: ensure scripts in bashrc.d are run in bash_profile
   blockinfile:
     backup: yes
-    dest: "{{ ansible_env.HOME }}/.bash_profile"
+    dest: "{{ ansible_env.HOME }}/.bashrc"
     create: yes
     insertafter: EOF
     block: |
