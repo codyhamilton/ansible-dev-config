@@ -1,0 +1,28 @@
+---
+
+- name: create config folder structure
+  file:
+    path: "{{ app.prefix }}/{{ item }}"
+    state: directory
+  with_items:
+    - "autoload"
+    - "plugin"
+
+- name: copy vimrc to user home folder
+  template:
+    backup: yes
+    src: "files/vimrc"
+    dest: "{{ app.init }}"
+
+- name: install vim plugin manager
+  copy:
+    src: "files/plug.vim"
+    dest: "{{ app.prefix }}/autoload/plug.vim"
+
+- name: copy other custom plugins
+  copy:
+    backup: no
+    src: "files/{{ item }}.vim"
+    dest: "{{ app.prefix }}/plugin/"
+  with_items:
+    - "{{ ansible_os_family }}"

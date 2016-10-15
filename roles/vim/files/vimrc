@@ -2,15 +2,25 @@
  " This must be first, because it changes other options as a side effect.
 set nocompatible
 
-" ===== Load plugins ===========================
+" ================ Plugin Init ====================
+call plug#begin('{{ vim.prefix }}/plugged')
 
-source ~/.vim/plugins.vim
+	{% for item in plugins %}
+		Plug '{{ item }}'
+	{% endfor %}
+
+call plug#end()
 
 " ===== Powerline ==============================
 
 set laststatus=2
-let g:Powerline_theme='long'
-let g:Powerline_colorscheme='solarized16'
+let g:airline#extensions#hunks#non_zero_only=1
+let g:airline_powerline_fonts=1
+let g:airline#extensions#whitespace#enabled=1
+let g:airline_section_c='%<%f %#__accent_bold#%m%#__restore__# %#__accent_red#%{airline#util#wrap(airline#parts#readonly(),0)}%#__restore__#'
+let g:airline_section_x='%{airline#util#prepend(airline#extensions#tagbar#currenttag(),0)}'
+let g:airline_section_y='%{airline#util#wrap(airline#parts#filetype(),0)}'
+let g:airline_section_z='%3p%% %{g:airline_symbols.linenr}%4l:%3v'
 
 " ===== General Config ==========================
 
@@ -102,9 +112,6 @@ let g:localvimrc_ask=0
 
 " =============== Git & Diff ========================
 
-for f in split(glob('~/.vim/vimrc.d/*.vim'), '\n')
-    exe 'source' f
-endfor
 set diffopt=vertical
 
 " =============== Command-T =========================
@@ -117,11 +124,6 @@ let g:CommandTFileScanner="git"
 
 " ===== Font Settings ===========================
 
-if has("gui_macvim")
-	set guifont=Monaco\ for\ Powerline:h15
-else
-	set guifont=Ubuntu\ Mono\ 13
-endif
 set t_Co=256
 let g:miniBufExplForceSyntaxEnable = 1
 
@@ -190,6 +192,6 @@ vnoremap // y/<C-R>"<CR>
 
 nmap <leader>gg :Gstatus<CR>
 
-vnoremap <leader><Tab> :Tabularize 
+vnoremap <leader><Tab> :Tabularize
 
 nmap <leader>dl ggi<?php<CR>/**<CR>@author William Hamilton <cody@reprocessd.com><CR>@copyright 2016 reprocessd.com<CR>/<CR>
