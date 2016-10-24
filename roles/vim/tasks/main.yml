@@ -1,4 +1,13 @@
 ---
 
-- include: configure.yml app={{ vim }}
-- include: configure.yml app={{ neovim }}
+- name: Set up vim configuration
+  include: configure.yml app={{ vim }}
+  when: vim
+
+- block:
+    - name: Set up neovim configuration
+      include: configure.yml app={{ neovim }}
+
+    - name: Install neovim gem plugin
+      gem: name=neovim state=present
+  when: neovim

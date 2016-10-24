@@ -3,7 +3,7 @@
 set nocompatible
 
 " ================ Plugin Init ====================
-call plug#begin('{{ vim.prefix }}/plugged')
+call plug#begin('{{ app.prefix }}/plugged')
 
 	{% for item in plugins %}
 		Plug '{{ item }}'
