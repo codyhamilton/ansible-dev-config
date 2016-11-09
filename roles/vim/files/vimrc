@@ -17,6 +17,7 @@ set laststatus=2
 let g:airline#extensions#hunks#non_zero_only=1
 let g:airline_powerline_fonts=1
 let g:airline#extensions#whitespace#enabled=1
+let g:airline#extensions#tabline#enabled=1
 let g:airline_section_c='%<%f %#__accent_red#%{airline#util#wrap(airline#parts#readonly(),0)}%#__restore__#'
 let g:airline_section_x='%{airline#util#prepend(airline#extensions#tagbar#currenttag(),0)}'
 let g:airline_section_y='%{airline#util#wrap(airline#parts#filetype(),0)}'
@@ -195,5 +196,8 @@ vnoremap // y/<C-R>"<CR>
 nmap <leader>gg :Gstatus<CR>
 
 vnoremap <leader><Tab> :Tabularize
+
+" Cleanup merge commits
+command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
 
 nmap <leader>dl ggi<?php<CR>/**<CR>@author William Hamilton <cody@reprocessd.com><CR>@copyright 2016 reprocessd.com<CR>/<CR>
