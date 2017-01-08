@@ -201,3 +201,6 @@ vnoremap <leader><Tab> :Tabularize
 command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
 
 nmap <leader>dl ggi<?php<CR>/**<CR>@author William Hamilton <cody@reprocessd.com><CR>@copyright 2016 reprocessd.com<CR>/<CR>
+
+" Yank a line or range into a new file
+command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args>
