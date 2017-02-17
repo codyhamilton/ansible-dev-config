@@ -155,6 +155,9 @@ let g:syntastic_less_use_less_lint = 0
 
 " ===== All custom mappings =====
 
+nnoremap <silent> <leader>dd <Plug>DashSearch
+nnoremap <leader>ds :Dash<Space>
+
 " Save file
 noremap <C-s> :w<CR>
 

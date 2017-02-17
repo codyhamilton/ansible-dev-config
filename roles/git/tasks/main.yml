@@ -27,11 +27,18 @@
     value: "{{ item.value }}"
   with_items:
     - { alias: 'll', value: 'log --graph --oneline --decorate --branches --tags' }
+    - { alias: 'lll', value: 'log --graph --oneline --decorate --all' }
+    - { alias: 'lgb', value: 'log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n" --abbrev-commit --date=relative --branches' }
     - { alias: 'bl', value: 'branch --list' }
     - { alias: 'co', value: 'checkout' }
     - { alias: 'rbl', value: 'remote show origin' }
     - { alias: 'fix', value: 'commit --fixup @' }
     - { alias: 'squash', value: 'commit --squash @' }
+    - { alias: 'bc', value: 'branch -r --contains' }
+    - { alias: 'mt', value: 'mergetool' }
+    - { alias: 'ds', value: 'diff --stat --summary' }
+    - { alias: 'dn', value: 'diff --name-only' }
+    - { alias: 'dt', value: 'checkout --detach' }
 
 - name: Install gitprompt
   git:
