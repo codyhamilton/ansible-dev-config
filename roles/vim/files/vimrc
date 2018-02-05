@@ -22,7 +22,7 @@ let g:airline_section_c='%<%f %#__accent_red#%{airline#util#wrap(airline#parts#r
 let g:airline_section_x='%{airline#util#prepend(airline#extensions#tagbar#currenttag(),0)}'
 let g:airline_section_y='%{airline#util#wrap(airline#parts#filetype(),0)}'
 let g:airline_section_z='%2p%% %{g:airline_symbols.linenr} %1l:%1v'
-let g:airline_section_error='%{airline#util#wrap(airline#extensions#whitespace#check(),0)}%{airline#util#wrap(airline#extensions#syntastic#get_warnings(),0)}'
+let g:airline_section_error='%{airline#util#wrap(airline#extensions#whitespace#check(),0)}%'
 let g:airline_section_warning='%0{airline#util#wrap(&modified ? "MODIFIED" : "",-1)}'
 
 " ===== General Config ==========================
@@ -155,17 +155,11 @@ let g:syntastic_less_use_less_lint = 0
 
 " ===== All custom mappings =====
 
-nnoremap <silent> <leader>dd <Plug>DashSearch
-nnoremap <leader>ds :Dash<Space>
-
 " Save file
 noremap <C-s> :w<CR>
 
 " Make
 nmap <leader>m :make<CR>
-
-" Upload file using Transmit
-nmap <leader>u <Plug>TransmittyUploadLook<CR>:redraw!<CR>
 
 " Show Command-T finder
 nnoremap <leader><leader> :CommandT<CR>
@@ -179,16 +173,23 @@ nnoremap <leader>gn :GitGutterNextHunk<CR>
 nnoremap <leader>gp :GitGutterPrevHunk<CR>
 nnoremap <leader>gs :GitGutterStageHunk<CR>
 nnoremap <leader>gr :GitGutterRevertHunk<CR>
-nnoremap <leader>n :NERDTreeToggle<CR>
+
+" NERDTree
+nnoremap <Tab> :NERDTreeToggle<CR>
+nnoremap <leader>n :NERDTreeFind<CR>
+
+" Terminal
+nnoremap <leader>tt :tabe +terminal<CR>
+nnoremap <leader>ts :sp +terminal<CR>
+nnoremap <leader>tv :vsp +terminal<CR>
+tnoremap <Esc> <C-\><C-n>
 
 " Quickfix Enmasse (magic quickfix)
 nnoremap <leader>e :EnMasse<CR>
 
 " Close the file without losing the window
-nmap <leader>q <Plug>BufKillBd<CR>
-
-" Open the current directory in finder
-nnoremap <leader>o :! open %:h<CR>
+nmap <leader>q :BD<CR>
+nmap <C-c> :BD<CR>
 
 " Paste the last yank register while in insert mode
 imap <C-v> <Esc>pi
@@ -202,8 +203,6 @@ vnoremap <leader><Tab> :Tabularize
 
 " Cleanup merge commits
 command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
-
-nmap <leader>dl ggi<?php<CR>/**<CR>@author William Hamilton <cody@reprocessd.com><CR>@copyright 2016 reprocessd.com<CR>/<CR>
 
 " Yank a line or range into a new file
 command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args>

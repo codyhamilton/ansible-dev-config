@@ -19,7 +19,7 @@ plugins:
   - jistr/vim-nerdtree-tabs
   - altercation/vim-colors-solarized
   - wincent/Command-T
-  - bufkill.vim
+  - qpkorr/vim-bufkill
   - vim-airline/vim-airline
   - vim-airline/vim-airline-themes
 
@@ -50,7 +50,6 @@ plugins:
   - Olical/vim-enmasse
 
   # Other
-  - taglist.vim
   - mattn/emmet-vim
   - Lokaltog/vim-easymotion
   - 29decibel/vim-stringify
