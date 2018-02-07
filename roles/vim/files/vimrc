@@ -12,7 +12,6 @@ call plug#begin('{{ app.prefix }}/plugged')
 call plug#end()
 
 " ===== Powerline ==============================
-
 set laststatus=2
 let g:airline#extensions#hunks#non_zero_only=1
 let g:airline_powerline_fonts=1
@@ -26,7 +25,6 @@ let g:airline_section_error='%{airline#util#wrap(airline#extensions#whitespace#c
 let g:airline_section_warning='%0{airline#util#wrap(&modified ? "MODIFIED" : "",-1)}'
 
 " ===== General Config ==========================
-
 set number                     " Line numbers are good
 set backspace=indent,eol,start " Allow backspace in insert mode
 set history=1000               " Store lots of :cmdline history
@@ -37,18 +35,16 @@ set visualbell                 " No sounds
 set autoread                   " Reload files changed outside vim
 set mouse=a                    " Enable mouse
 set cursorline                 " Highline line under cursor
-colorscheme solarized          " Set the theme
+colorscheme NeoSolarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
 
 " === Search Settings  ========================
-
 set incsearch        " Find the next match as we type the search
 set hlsearch         " Hilight searches by default
 set viminfo='100,f1  " Save up to 100 marks, enable capital marks
 
 " ================ Turn Off Swap Files ==============
-
 set noswapfile
 set nobackup
 set nowb
@@ -62,7 +58,6 @@ set undodir=~/.vim/backups
 set undofile
 
 " ================ Indentation ======================
-
 set autoindent
 set smartindent
 set smarttab
@@ -70,6 +65,7 @@ set shiftwidth=2
 set softtabstop=2
 set tabstop=2
 set noexpandtab
+set linebreak    "Wrap lines at convenient points
 
 filetype plugin on
 filetype indent on
@@ -77,16 +73,12 @@ filetype indent on
 " Display tabs and trailing spaces visually
 set list listchars=tab:\ \ ,trail:·
 
-set linebreak    "Wrap lines at convenient points
-
 " ================ Folds ============================
-
 set foldmethod=indent   "fold based on indent
 set foldnestmax=3       "deepest fold is 3 levels
 set nofoldenable        "dont fold by default
 
 " ================ Completion =======================
-
 set wildmode=list:longest
 set wildmenu                "enable ctrl-n and ctrl-p to scroll thru matches
 set wildignore=*.o,*.obj,*~ "stuff to ignore when tab completing
@@ -103,46 +95,38 @@ set wildignore+=.git*
 set wildignore+=.vagrant*
 
 " ================ Scrolling ========================
-
 set scrolloff=3         "Start scrolling when we're 3 lines away from margins
 set sidescrolloff=15
 set sidescroll=1
 
 " =============== Local .vimrc =======================
-
 let g:localvimrc_sandbox=0
 let g:localvimrc_ask=0
 
 " =============== Git & Diff ========================
-
 set diffopt=vertical
 
 " =============== Command-T =========================
-
 let g:user_emmet_leader_key='<c-x>'
 let g:CommandTMatchWindowReverse=1
-let g:CommandTAcceptSelectionMap='<C-s>'
-let g:CommandTAcceptSelectionTabMap='<CR>'
 let g:CommandTFileScanner="git"
 
 " ===== Font Settings ===========================
-
 set t_Co=256
 let g:miniBufExplForceSyntaxEnable = 1
 
 " ===== NERDTree ================================
-
 let NERDTreeShowBookmarks=1
+let NERDTreeMinimalUI=1
 let NERDTreeAutoCenter=0
 let NERDTreeAutoCenterThreshold=0
 let NERDTreeShowHidden=1
 let NERDTreeChDirMode=2
-let NERDTreeQuitOnOpen=0
+let NERDTreeQuitOnOpen=1
 let NERDTreeIgnore=['\.DS_Store']
 let g:nerdtree_tabs_open_on_gui_startup = 0
 
 " ===== Syntastic ===============================
-
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
@@ -152,9 +136,10 @@ let g:syntastic_auto_loc_list = 2
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 let g:syntastic_less_use_less_lint = 0
+let g:colorizer_auto_filetype='less,scss,css,html'
 
 " ===== All custom mappings =====
-
+"
 " Save file
 noremap <C-s> :w<CR>
 
@@ -175,17 +160,16 @@ nnoremap <leader>gs :GitGutterStageHunk<CR>
 nnoremap <leader>gr :GitGutterRevertHunk<CR>
 
 " NERDTree
-nnoremap <Tab> :NERDTreeToggle<CR>
-nnoremap <leader>n :NERDTreeFind<CR>
+nnoremap <Tab> :NERDTreeFind<CR>
 
 " Terminal
-nnoremap <leader>tt :tabe +terminal<CR>
-nnoremap <leader>ts :sp +terminal<CR>
-nnoremap <leader>tv :vsp +terminal<CR>
-tnoremap <Esc> <C-\><C-n>
+nnoremap <leader>tt :tabe term://bash\ --login<CR>i
+nnoremap <leader>tv :vsp term://bash\ --login<CR>i
+nnoremap <leader>ts :sp term://bash\ --login<CR>i
+tnoremap <leader><Esc> <C-\><C-n>
 
 " Quickfix Enmasse (magic quickfix)
-nnoremap <leader>e :EnMasse<CR>
+nnoremap <leader>r :EnMasse<CR>
 
 " Close the file without losing the window
 nmap <leader>q :BD<CR>
@@ -199,10 +183,12 @@ vnoremap // y/<C-R>"<CR>
 
 nmap <leader>gg :Gstatus<CR>
 
-vnoremap <leader><Tab> :Tabularize
+vnoremap <leader><Tab> :Tabularize /
 
 " Cleanup merge commits
 command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
 
 " Yank a line or range into a new file
 command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args>
+
+command! Jsonify :%!python -m json.tool

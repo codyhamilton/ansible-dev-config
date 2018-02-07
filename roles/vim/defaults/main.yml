@@ -18,6 +18,7 @@ plugins:
   - scrooloose/nerdtree
   - jistr/vim-nerdtree-tabs
   - altercation/vim-colors-solarized
+  - iCyMind/NeoSolarized
   - wincent/Command-T
   - qpkorr/vim-bufkill
   - vim-airline/vim-airline
@@ -34,6 +35,7 @@ plugins:
   - parkr/vim-jekyll
   - vim-ruby/vim-ruby
   - chase/vim-ansible-yaml
+  - htacg/tidy-html5
 
   # Integrations
   - hlissner/vim-transmitty
