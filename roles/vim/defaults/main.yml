@@ -18,14 +18,14 @@ plugins:
   - scrooloose/nerdtree
   - jistr/vim-nerdtree-tabs
   - altercation/vim-colors-solarized
-  - iCyMind/NeoSolarized
   - wincent/Command-T
   - qpkorr/vim-bufkill
   - vim-airline/vim-airline
   - vim-airline/vim-airline-themes
 
   # Filetypes
-  - scrooloose/syntastic
+  - valloric/youcompleteme
+	- w0rp/ale
   - othree/html5.vim
   - hail2u/vim-css3-syntax
   - groenewege/vim-less
@@ -41,7 +41,6 @@ plugins:
   - hlissner/vim-transmitty
   - tpope/vim-fugitive
   - airblade/vim-gitgutter
-  - rizzatti/dash.vim
 
   # Text manipulation
   - terryma/vim-multiple-cursors
@@ -58,7 +57,6 @@ plugins:
   - tpope/vim-surround
   - tpope/vim-dispatch
   - xolox/vim-misc
-  - xolox/vim-easytags
   - tpope/vim-endwise
   - slim-template/vim-slim
   - joonty/vdebug

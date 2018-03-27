@@ -17,6 +17,7 @@ let g:airline#extensions#hunks#non_zero_only=1
 let g:airline_powerline_fonts=1
 let g:airline#extensions#whitespace#enabled=1
 let g:airline#extensions#tabline#enabled=1
+let g:airline#extensions#ale#enabled = 1
 let g:airline_section_c='%<%f %#__accent_red#%{airline#util#wrap(airline#parts#readonly(),0)}%#__restore__#'
 let g:airline_section_x='%{airline#util#prepend(airline#extensions#tagbar#currenttag(),0)}'
 let g:airline_section_y='%{airline#util#wrap(airline#parts#filetype(),0)}'
@@ -34,8 +35,8 @@ set gcr=a:blinkon0             " Disable cursor blink
 set visualbell                 " No sounds
 set autoread                   " Reload files changed outside vim
 set mouse=a                    " Enable mouse
-set cursorline                 " Highline line under cursor
-colorscheme NeoSolarized          " Set the theme
+" set cursorline                 " Highline line under cursor. Nice but makes things slow
+colorscheme Solarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
 
@@ -98,6 +99,7 @@ set wildignore+=.vagrant*
 set scrolloff=3         "Start scrolling when we're 3 lines away from margins
 set sidescrolloff=15
 set sidescroll=1
+set guioptions=
 
 " =============== Local .vimrc =======================
 let g:localvimrc_sandbox=0
@@ -138,38 +140,51 @@ let g:syntastic_check_on_wq = 0
 let g:syntastic_less_use_less_lint = 0
 let g:colorizer_auto_filetype='less,scss,css,html'
 
-" ===== All custom mappings =====
+let g:ale_linters = {
+\   'javascript': ['eslint'],
+\}
+" ===== Core mappings =====
 "
 " Save file
 noremap <C-s> :w<CR>
 
-" Make
-nmap <leader>m :make<CR>
+" NERDTree
+nmap <Tab> :NERDTreeToggle<CR>
+nmap <leader><leader> :CommandT<CR>
 
-" Show Command-T finder
-nnoremap <leader><leader> :CommandT<CR>
+nmap <leader>m :make<CR>
 
 " EasyMotion Mappings
 nmap <Leader> <Plug>(easymotion-prefix)
 
-" ===== All custom mappings =====
-nnoremap <leader>gh :GitGutterLineHighlightsToggle<CR>
-nnoremap <leader>gn :GitGutterNextHunk<CR>
-nnoremap <leader>gp :GitGutterPrevHunk<CR>
-nnoremap <leader>gs :GitGutterStageHunk<CR>
-nnoremap <leader>gr :GitGutterRevertHunk<CR>
+" == Custom commands ==
+command! -nargs=+ CustomGrep execute 'silent Ggrep! <args>' | copen
+command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args> " Yank a line or range into a new file
+command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
+command! Jsonify :%!python -m json.tool
 
-" NERDTree
-nnoremap <Tab> :NERDTreeFind<CR>
+" ======== Fix ========
+nnoremap <leader>r :EnMasse<CR>
+
+" ======== GIT ========
+nmap <leader>gn :GitGutterNextHunk<CR>
+nmap <leader>gp :GitGutterPrevHunk<CR>
+nmap <leader>gr :GitGutterRevertHunk<CR>
+nmap <leader>gs :Gstatus<CR>
+nmap <leader>gg :CustomGrep
+
+" ====== JumpTo  ======
+nmap <leader>jd :YcmCompleter GoToDefinition<CR>
+nmap <leader>jr :YcmCompleter GoToReferences<CR>
+nmap <leader>jj :CommandTJump<CR>
+nmap <leader>jb :CommandTBuffer<CR>
+nmap <leader>jl :CommandTLine<CR>
 
 " Terminal
-nnoremap <leader>tt :tabe term://bash\ --login<CR>i
-nnoremap <leader>tv :vsp term://bash\ --login<CR>i
-nnoremap <leader>ts :sp term://bash\ --login<CR>i
-tnoremap <leader><Esc> <C-\><C-n>
-
-" Quickfix Enmasse (magic quickfix)
-nnoremap <leader>r :EnMasse<CR>
+"nnoremap <leader>tt :tabe term://bash\ --login<CR>i
+"nnoremap <leader>tv :vsp term://bash\ --login<CR>i
+"nnoremap <leader>ts :sp term://bash\ --login<CR>i
+"tnoremap <leader><Esc> <C-\><C-n>
 
 " Close the file without losing the window
 nmap <leader>q :BD<CR>
@@ -180,15 +195,4 @@ imap <C-v> <Esc>pi
 
 " Search for occurances of visually selected text
 vnoremap // y/<C-R>"<CR>
-
-nmap <leader>gg :Gstatus<CR>
-
 vnoremap <leader><Tab> :Tabularize /
-
-" Cleanup merge commits
-command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
-
-" Yank a line or range into a new file
-command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args>
-
-command! Jsonify :%!python -m json.tool
