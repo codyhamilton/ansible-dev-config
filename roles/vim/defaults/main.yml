@@ -14,18 +14,21 @@ neovim:
 plugins:
 
   # Core plugins
+  - joonty/vdebug
   - embear/vim-localvimrc
   - scrooloose/nerdtree
   - jistr/vim-nerdtree-tabs
   - altercation/vim-colors-solarized
-  - wincent/Command-T
+  - name: wincent/Command-T
+    do: "cd ruby/command-t/ext/command-t; ruby extconf.rb; make clean; make"
   - qpkorr/vim-bufkill
   - vim-airline/vim-airline
   - vim-airline/vim-airline-themes
 
   # Filetypes
-  - valloric/youcompleteme
-	- w0rp/ale
+  - name: valloric/youcompleteme
+    do: "./install.py --js-completer --java-completer"
+  - w0rp/ale
   - othree/html5.vim
   - hail2u/vim-css3-syntax
   - groenewege/vim-less
@@ -49,6 +52,8 @@ plugins:
   - kana/vim-textobj-user
   - nelstrom/vim-textobj-rubyblock
   - Olical/vim-enmasse
+  - honza/vim-snippets
+  - sirver/ultisnips
 
   # Other
   - mattn/emmet-vim
@@ -59,6 +64,5 @@ plugins:
   - xolox/vim-misc
   - tpope/vim-endwise
   - slim-template/vim-slim
-  - joonty/vdebug
   - evidens/vim-twig
   - majutsushi/tagbar

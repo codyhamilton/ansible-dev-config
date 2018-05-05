@@ -6,7 +6,11 @@ set nocompatible
 call plug#begin('{{ app.prefix }}/plugged')
 
 	{% for item in plugins %}
-		Plug '{{ item }}'
+		{% if item is mapping %}
+			Plug '{{ item.name }}', { 'do': '{{ item.do }}' }
+		{% else %}
+			Plug '{{ item }}'
+		{% endif %}
 	{% endfor %}
 
 call plug#end()
@@ -36,7 +40,7 @@ set visualbell                 " No sounds
 set autoread                   " Reload files changed outside vim
 set mouse=a                    " Enable mouse
 " set cursorline                 " Highline line under cursor. Nice but makes things slow
-colorscheme Solarized          " Set the theme
+colorscheme solarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
 
@@ -151,8 +155,7 @@ noremap <C-s> :w<CR>
 " NERDTree
 nmap <Tab> :NERDTreeToggle<CR>
 nmap <leader><leader> :CommandT<CR>
-
-nmap <leader>m :make<CR>
+nmap // :CommandTBuffer<CR>
 
 " EasyMotion Mappings
 nmap <Leader> <Plug>(easymotion-prefix)
