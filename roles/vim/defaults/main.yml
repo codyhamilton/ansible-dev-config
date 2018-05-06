@@ -16,6 +16,7 @@ plugins:
   # Core plugins
   - joonty/vdebug
   - embear/vim-localvimrc
+  - editorconfig/editorconfig-vim
   - scrooloose/nerdtree
   - jistr/vim-nerdtree-tabs
   - altercation/vim-colors-solarized

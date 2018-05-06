@@ -105,9 +105,10 @@ set sidescrolloff=15
 set sidescroll=1
 set guioptions=
 
-" =============== Local .vimrc =======================
+" ========== Local .vimrc and EditorConfig ==========
 let g:localvimrc_sandbox=0
 let g:localvimrc_ask=0
+let g:EditorConfig_exclude_patterns = ['fugitive://.*']
 
 " =============== Git & Diff ========================
 set diffopt=vertical
@@ -143,6 +144,8 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 let g:syntastic_less_use_less_lint = 0
 let g:colorizer_auto_filetype='less,scss,css,html'
+
+let g:UltiSnipsExpandTrigger="<C-Space>"
 
 let g:ale_linters = {
 \   'javascript': ['eslint'],
@@ -195,6 +198,7 @@ nmap <C-c> :BD<CR>
 
 " Paste the last yank register while in insert mode
 imap <C-v> <Esc>pi
+
 
 " Search for occurances of visually selected text
 vnoremap // y/<C-R>"<CR>
