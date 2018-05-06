@@ -1,4 +1,5 @@
 #!/bin/bash
 
 alias ll="ls -lG";
-alias nv="nvim";
+
+function v() { vim -c "CommandT" -c "normal $@"; }

@@ -42,9 +42,9 @@ plugins:
   - htacg/tidy-html5
 
   # Integrations
-  - hlissner/vim-transmitty
   - tpope/vim-fugitive
   - airblade/vim-gitgutter
+  - xuyuanp/nerdtree-git-plugin
 
   # Text manipulation
   - terryma/vim-multiple-cursors
