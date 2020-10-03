@@ -2,4 +2,10 @@
 
 alias ll="ls -lG";
 
-function v() { vim -c "CommandT" -c "normal $@"; }
+function v() {
+	if [ -n "$@" ]; then
+		nvim -c "CtrlP" -c "normal $@";
+	else
+		nvim
+	fi
+}
