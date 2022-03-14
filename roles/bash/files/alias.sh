@@ -2,10 +2,15 @@
 
 alias ll="ls -lG";
 
+cmd = "vim";
+if command -v nvim; then
+	cmd = "nvim"
+fi
+
 function v() {
 	if [ -n "$@" ]; then
-		nvim -c "CtrlP" -c "normal $@";
+		$cmd -c "Telescope" -c "normal $@";
 	else
-		nvim
+		$cmd
 	fi
 }
