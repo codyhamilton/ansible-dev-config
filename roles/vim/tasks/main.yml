@@ -8,6 +8,6 @@
     - name: Set up neovim configuration
       include: configure.yml app={{ neovim }}
 
-      #    - name: Install neovim gem plugin
-      #gem: name=neovim state=present
+    - name: Install neovim gem plugin
+      gem: name=neovim state=present
   when: neovim
