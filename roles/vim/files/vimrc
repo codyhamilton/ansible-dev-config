@@ -5,18 +5,32 @@ set nocompatible
 " ================ Plugin Init ====================
 call plug#begin('{{ app.prefix }}/plugged')
 
-  Plug 'joonty/vdebug'
+	" Core
 	Plug 'embear/vim-localvimrc'
 	Plug 'editorconfig/editorconfig-vim'
-	Plug 'scrooloose/nerdtree'
-	Plug 'jistr/vim-nerdtree-tabs'
+	Plug 'tpope/vim-dispatch'
+	Plug 'xolox/vim-misc'
+
+	" Visual
 	Plug 'altercation/vim-colors-solarized'
-  Plug 'ctrlpvim/ctrlp.vim'
-	Plug 'qpkorr/vim-bufkill'
 	Plug 'vim-airline/vim-airline'
 	Plug 'vim-airline/vim-airline-themes'
+
+	" Navigation
+	Plug 'scrooloose/nerdtree'
+	Plug 'jistr/vim-nerdtree-tabs'
+	Plug 'BurntSushi/ripgrep'
+	Plug 'nvim-lua/plenary.nvim'
+	Plug 'nvim-telescope/telescope.nvim'
+	Plug 'qpkorr/vim-bufkill'
+  Plug 'majutsushi/tagbar'
+
+	" Completion / Linting / Debug
 	Plug 'valloric/youcompleteme', { 'do': './install.py --java-completer' }
 	Plug 'w0rp/ale'
+  Plug 'joonty/vdebug'
+
+	" Filetypes
 	Plug 'tpope/vim-cucumber'
 	Plug 'othree/html5.vim'
 	Plug 'hail2u/vim-css3-syntax'
@@ -29,27 +43,29 @@ call plug#begin('{{ app.prefix }}/plugged')
 	Plug 'vim-ruby/vim-ruby'
 	Plug 'chase/vim-ansible-yaml'
 	Plug 'htacg/tidy-html5'
+  Plug 'rodjek/vim-puppet'
+
+	" Git support
 	Plug 'tpope/vim-fugitive'
 	Plug 'airblade/vim-gitgutter'
 	Plug 'xuyuanp/nerdtree-git-plugin'
+
+	" Text manipulation
 	Plug 'terryma/vim-multiple-cursors'
 	Plug 'scrooloose/nerdcommenter'
 	Plug 'godlygeek/tabular'
 	Plug 'kana/vim-textobj-user'
 	Plug 'nelstrom/vim-textobj-rubyblock'
 	Plug 'Olical/vim-enmasse'
-  Plug 'rodjek/vim-puppet'
 	Plug 'honza/vim-snippets'
 	Plug 'mattn/emmet-vim'
 	Plug 'Lokaltog/vim-easymotion'
 	Plug '29decibel/vim-stringify'
 	Plug 'tpope/vim-surround'
-	Plug 'tpope/vim-dispatch'
-	Plug 'xolox/vim-misc'
 	Plug 'tpope/vim-endwise'
 	Plug 'slim-template/vim-slim'
 	Plug 'evidens/vim-twig'
-  Plug 'majutsushi/tagbar'
+  Plug 'maxmellon/vim-jsx-pretty'
 
 call plug#end()
 
@@ -77,7 +93,7 @@ set gcr=a:blinkon0             " Disable cursor blink
 set visualbell                 " No sounds
 set autoread                   " Reload files changed outside vim
 set mouse=a                    " Enable mouse
-" set cursorline                 " Highline line under cursor. Nice but makes things slow
+set cursorline                 " Highline line under cursor. Nice but makes things slow
 colorscheme solarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
@@ -154,9 +170,6 @@ set diffopt=vertical
 
 " =============== Command-T =========================
 let g:user_emmet_leader_key='<c-x>'
-let g:CommandTMatchWindowReverse=1
-let g:CommandTFileScanner="git"
-let g:CommandTGitIncludeUntracked=1
 
 " ===== Font Settings ===========================
 set t_Co=256
@@ -170,12 +183,12 @@ let NERDTreeAutoCenterThreshold=0
 let NERDTreeShowHidden=1
 let NERDTreeChDirMode=2
 let NERDTreeQuitOnOpen=1
-let NERDTreeIgnore=['\.DS_Store']
+let NERDTreeIgnore=['\.DS_Store', '\.git']
 let g:nerdtree_tabs_open_on_gui_startup = 0
 
 " ===== Syntastic ===============================
 set statusline+=%#warningmsg#
-"set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
 
 let g:syntastic_always_populate_loc_list = 1
@@ -189,7 +202,6 @@ let g:UltiSnipsExpandTrigger="<C-Space>"
 
 let g:ale_linters = {
 \   'javascript': ['eslint'],
-\   'typescript': ['tslint']
 \}
 " ===== Core mappings =====
 "
@@ -206,8 +218,8 @@ let g:multi_cursor_exit_from_insert_mode = 0
 
 " NERDTree
 nmap <Tab> :NERDTreeToggle<CR>
-nmap <leader><leader> :CtrlP<CR>
-nmap // :CtrlPMRU<CR>
+nmap <leader><leader> :Telescope find_files<CR>
+nmap // :Telescope buffers<CR>
 
 " EasyMotion Mappings
 nmap <Leader> <Plug>(easymotion-prefix)
@@ -218,6 +230,7 @@ command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args> " Yank a li
 command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
 command! Jsonify :%!python -m json.tool
 
+nmap <leader>conf :tabe ~/.config/nvim/init.vim<CR>
 " ======== Fix ========
 nnoremap <leader>r :EnMasse<CR>
 nmap <leader>fu :YcmCompleter FixIt<CR>
@@ -229,23 +242,27 @@ imap  <Esc>:YcmCompleter FixIt<CR>i
 nmap <leader>gn :GitGutterNextHunk<CR>
 nmap <leader>gp :GitGutterPrevHunk<CR>
 nmap <leader>gr :GitGutterRevertHunk<CR>
-nmap <leader>gs :Gstatus<CR>
-nmap <leader>gg :CustomGrep
+nmap <leader>gs :Git<CR>
+nmap <leader>gg :Telescope live_grep<CR>
+
+" ======= Light/dark theme =======
+nmap <leader>bl :set bg=light<CR>
+nmap <leader>bd :set bg=dark<CR>
 
 " ====== JumpTo  ======
 nmap <leader>jd :YcmCompleter GoToDefinition<CR>
 nmap <leader>jr :YcmCompleter GoToReferences<CR>
 nmap <leader>jj :NERDTreeFind<CR>
-nmap <leader>jb :CommandTBuffer<CR>
-nmap <leader>jl :CommandTLine<CR>
 
 " Terminal
-"nnoremap <leader>tt :tabe term://bash\ --login<CR>i
-"nnoremap <leader>tv :vsp term://bash\ --login<CR>i
-"nnoremap <leader>ts :sp term://bash\ --login<CR>i
-nnoremap <leader>tt :tab terminal bash --login<CR>
-nnoremap <leader>tv :vertical terminal bash --login<CR>
-nnoremap <leader>ts :terminal bash --login<CR>
+"nnoremap <leader>tt :tab terminal bash --login<CR>
+"nnoremap <leader>tv :vertical terminal bash --login<CR>
+"nnoremap <leader>ts :terminal bash --login<CR>
+
+" Terminal
+nnoremap <leader>tt :tabe term://bash\ --login<CR>i
+nnoremap <leader>tv :vsp term://bash\ --login<CR>i
+nnoremap <leader>ts :sp term://bash\ --login<CR>i
 tnoremap <leader><Esc> <C-\><C-n>
 
 " Close the file without losing the window
@@ -259,3 +276,14 @@ imap <C-v> <Esc>pi
 " Search for occurances of visually selected text
 vnoremap // y/<C-R>"<CR>
 vnoremap <leader><Tab> :Tabularize /
+
+lua << EOF
+require('telescope').setup{
+	defaults = {
+		file_ignore_patterns = {
+			'node_modules',
+			'.git'
+		}
+	}
+}
+EOF
