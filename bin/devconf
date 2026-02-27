@@ -1,0 +1,102 @@
+#!/bin/sh
+# bin/devconf — devconf CLI dispatcher
+# Resolves its own location (handles symlinks), sources lib/, dispatches commands.
+
+set -e
+
+# ── Resolve DEVCONF_REPO from script's real location ─────────────────────────
+_SELF="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+DEVCONF_REPO="$(cd "$(dirname "$_SELF")/.." && pwd)"
+export DEVCONF_REPO
+
+# ── Source libs ───────────────────────────────────────────────────────────────
+. "${DEVCONF_REPO}/lib/utils.sh"
+. "${DEVCONF_REPO}/lib/diff.sh"
+. "${DEVCONF_REPO}/lib/configure.sh"
+. "${DEVCONF_REPO}/lib/sync.sh"
+
+# ── Top-level commands ────────────────────────────────────────────────────────
+
+cmd_configure() {
+  dc_detect_os
+  dc_bold "devconf configure (OS: $DC_OS)"
+  echo ""
+  dc_configure_bash
+  echo ""
+  dc_configure_git_files
+  echo ""
+  dc_configure_git_aliases
+  echo ""
+  dc_configure_gitprompt_install
+  echo ""
+  dc_configure_vim
+  echo ""
+  dc_configure_vimplug
+  echo ""
+  dc_configure_cursor
+  echo ""
+  dc_configure_claude
+  echo ""
+  dc_green "Done. You may need to: source $(dc_profile_file)"
+}
+
+cmd_update() {
+  dc_bold "devconf update"
+  echo ""
+  dc_require_cmd git
+  if ! git -C "$DEVCONF_REPO" pull --rebase; then
+    dc_err "git pull --rebase failed. Resolve conflicts in $DEVCONF_REPO, then run: devconf configure"
+    exit 1
+  fi
+  echo ""
+  cmd_configure
+}
+
+cmd_sync() {
+  dc_detect_os
+  dc_bold "devconf sync (OS: $DC_OS)"
+  echo ""
+  dc_sync_bash
+  echo ""
+  dc_sync_git_files
+  echo ""
+  dc_sync_git_aliases
+  echo ""
+  dc_sync_vim
+  echo ""
+  dc_sync_cursor
+  echo ""
+  dc_sync_claude
+  echo ""
+  dc_sync_commit
+}
+
+cmd_help() {
+  cat << 'EOF'
+devconf — developer config manager
+
+Usage: devconf <command>
+
+Commands:
+  configure   Apply configs from repo to live system
+  update      Pull latest repo changes, then configure
+  sync        Copy live configs back to repo and commit
+  help        Show this help message
+
+Repo: https://github.com/codyhamilton/ansible-dev-config
+EOF
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+  configure) cmd_configure ;;
+  update)    cmd_update ;;
+  sync)      cmd_sync ;;
+  help|--help|-h|"") cmd_help ;;
+  *)
+    dc_red "Unknown command: $1"
+    echo ""
+    cmd_help
+    exit 1
+    ;;
+esac

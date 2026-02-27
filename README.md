@@ -1,35 +1,111 @@
-[![Build Status](https://travis-ci.org/lonectzn/ansible-dev-config.svg?branch=master)](https://travis-ci.org/lonectzn/ansible-dev-config)
-Ansible Dev Config Tool
-=======================
+# devconf
 
-A set of commandline developer configs, using Ansible as a provisioner. Good place to start if you want to create your own custom configurations that can be pushed out to multiple environments.
+A self-contained POSIX shell tool for managing developer configs (bash, git, vim, Cursor, Claude).
 
-Not incredibly useful, unless you happen to work across multiple OS's.
+## Quick Install
 
-Requirements
-------------
+```sh
+curl -fsSL https://raw.githubusercontent.com/codyhamilton/ansible-dev-config/master/install.sh | sh
+```
 
- * (OSX only) XCode
- * Ansible
+This will:
+1. Clone the repo to `~/.local/opt/devconf`
+2. Symlink `devconf` to `~/.local/bin/devconf`
+3. Add `~/.local/bin` to your PATH in `~/.bashrc` / `~/.bash_profile`
+4. Run `devconf configure` interactively
 
-Getting Started
----------------
+## Commands
 
-1. clone the repository
-2. [Install Ansible](https://www.ansible.com/)
-3. Run `./configure.sh` from the project root
+```
+devconf configure   Apply configs from repo to live system
+devconf update      Pull latest repo changes, then configure
+devconf sync        Copy live configs back to repo and commit
+devconf help        Show help
+```
 
-Compatibility
--------------
+### `devconf configure`
 
-Should work with OSX, Red Hat and Debian based operating systems
+Deploys each config file from the repo to its live location. For each file:
+- **Identical** → prints `[ok]`, skips
+- **Different** → shows colored diff, prompts: `[a]ccept repo / [k]eep current / [e]dit in vim`
 
-License
--------
+### `devconf update`
+
+Pulls the latest repo changes (`git pull --rebase`), then runs `configure`.
+
+### `devconf sync`
+
+Compares live files to repo files. For each difference, prompts:
+`[a]dd to repo / [k]eep repo / [e]dit in vim / [s]kip`
+
+After collecting changes, stages them, prompts for a commit message, commits, and optionally pushes.
+
+## Repo Structure
+
+```
+configs/
+  bash/
+    alias.sh          → ~/.bashrc.d/alias.sh
+    defaults.sh       → ~/.bashrc.d/defaults.sh
+  git/
+    git-prompt-colors.sh  → ~/.git-prompt-colors.sh
+    gitprompt.sh          → ~/.bashrc.d/gitprompt.sh
+    gitcomplete.sh        → ~/.bashrc.d/gitcomplete.sh
+    gitconfig-aliases     → git config --global alias.*
+  vim/
+    vimrc             → ~/.config/nvim/init.vim  (or ~/.vimrc)
+    Darwin.vim        → OS-specific vim settings
+    Debian.vim
+    RedHat.vim
+  cursor/
+    argv.json         → ~/.cursor/argv.json
+    mcp.json          → ~/.cursor/mcp.json
+  claude/
+    settings.json     → ~/.claude/settings.json
+    CLAUDE.md         → ~/.claude/CLAUDE.md  (starter template)
+bin/
+  devconf             # CLI dispatcher
+lib/
+  utils.sh            # output helpers, OS detection, utilities
+  diff.sh             # diff engine and interactive prompts
+  configure.sh        # repo → live logic
+  sync.sh             # live → repo logic
+install.sh            # bootstrap one-liner
+```
+
+## Development
+
+Clone directly and run from the repo:
+
+```sh
+git clone https://github.com/codyhamilton/ansible-dev-config.git ~/workspace/devconf
+~/workspace/devconf/bin/devconf configure
+```
+
+## What Gets Configured
+
+| Config | Live Location |
+|--------|--------------|
+| Bash aliases | `~/.bashrc.d/alias.sh` |
+| Bash defaults (PS1, colors) | `~/.bashrc.d/defaults.sh` |
+| bashrc.d loader | injected into `~/.bashrc` or `~/.bash_profile` |
+| git-prompt colors | `~/.git-prompt-colors.sh` |
+| gitprompt loader | `~/.bashrc.d/gitprompt.sh` |
+| git tab completion | `~/.bashrc.d/gitcomplete.sh` |
+| bash-git-prompt | `~/.bashrc.d/git-prompt/` (cloned from GitHub) |
+| git aliases | `git config --global alias.*` |
+| git settings | `push.default=simple`, `core.editor=vim` |
+| vimrc | `~/.config/nvim/init.vim` or `~/.vimrc` |
+| vim-plug | installed if missing |
+| Cursor argv.json | `~/.cursor/argv.json` |
+| Cursor mcp.json | `~/.cursor/mcp.json` |
+| Claude settings | `~/.claude/settings.json` |
+| Claude CLAUDE.md | `~/.claude/CLAUDE.md` (created if absent) |
+
+## Compatibility
+
+macOS, Debian/Ubuntu, Red Hat/Fedora/CentOS
+
+## License
 
 BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
