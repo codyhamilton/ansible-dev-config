@@ -197,3 +197,19 @@ dc_configure_claude() {
     dc_ok "claude/CLAUDE.md (exists; not overwriting)"
   fi
 }
+
+# ── Tmux ──────────────────────────────────────────────────────────────────────
+
+dc_configure_tmux() {
+  dc_bold "Configuring tmux..."
+  _dc_apply_file "${DEVCONF_REPO}/configs/tmux/tmux.conf" "${HOME}/.tmux.conf" "tmux/tmux.conf"
+  local tpm_dir="${HOME}/.tmux/plugins/tpm"
+  if [ -d "${tpm_dir}/.git" ]; then
+    dc_ok "tpm (already installed)"
+  else
+    dc_require_cmd git
+    dc_ensure_dir "${HOME}/.tmux/plugins"
+    git clone --depth=1 "https://github.com/tmux-plugins/tpm" "$tpm_dir"
+    dc_ok "tpm installed at $tpm_dir"
+  fi
+}

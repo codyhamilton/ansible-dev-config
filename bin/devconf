@@ -37,6 +37,8 @@ cmd_configure() {
   echo ""
   dc_configure_claude
   echo ""
+  dc_configure_tmux
+  echo ""
   dc_green "Done. You may need to: source $(dc_profile_file)"
 }
 
@@ -67,6 +69,8 @@ cmd_sync() {
   dc_sync_cursor
   echo ""
   dc_sync_claude
+  echo ""
+  dc_sync_tmux
   echo ""
   dc_sync_commit
 }

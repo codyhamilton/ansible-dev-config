@@ -159,6 +159,13 @@ dc_sync_claude() {
   # Don't sync CLAUDE.md back — it's user-specific per project
 }
 
+# ── Tmux ──────────────────────────────────────────────────────────────────────
+
+dc_sync_tmux() {
+  dc_bold "Syncing tmux config..."
+  _dc_sync_file "${HOME}/.tmux.conf" "${DEVCONF_REPO}/configs/tmux/tmux.conf" "tmux/tmux.conf"
+}
+
 # ── Commit helper ─────────────────────────────────────────────────────────────
 
 dc_sync_commit() {
