@@ -295,35 +295,11 @@ EOF
 "
 " Works with both vim (8+) and neovim.
 function! s:OpenClaude()
-  " Remember which window we started in
-  let l:main = winnr()
-
-  " Open a vertical split on the right (~40% of current width)
-  let l:right_w = float2nr(winwidth(0) * 0.4)
-  botright vsplit
-  execute 'vertical resize ' . l:right_w
-
-  " Split a shell terminal at the bottom of the right side (~20% of height)
-  let l:bot_h = float2nr(winheight(0) * 0.2)
-  botright split
+  botright vsp
+  terminal ++curwin
+  let l:bot_h = float2nr(winheight(0) * 0.8)
+  terminal claude
   execute 'resize ' . l:bot_h
-  if has('nvim')
-    terminal
-  else
-    terminal ++curwin
-  endif
-  setlocal nonumber norelativenumber
-
-  " Move up to the top-right pane and start claude
-  wincmd k
-  if has('nvim')
-    terminal claude
-  else
-    terminal ++curwin claude
-  endif
-  setlocal nonumber norelativenumber
-
-  " Return focus to the main editing pane
   wincmd h
 endfunction
 
