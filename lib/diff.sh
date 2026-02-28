@@ -5,8 +5,8 @@
 
 dc_show_diff() {
   # dc_show_diff <file_a> <file_b>
-  # Prints a colored unified diff of file_a vs file_b
-  diff -u "$1" "$2" | while IFS= read -r line; do
+  # Prints a colored unified diff of file_a vs file_b, ignoring whitespace-only changes
+  diff -u -b "$1" "$2" | while IFS= read -r line; do
     case "$line" in
       ---*|+++*) printf '\033[1m%s\033[0m\n'  "$line" ;;
       +*)        printf '\033[32m%s\033[0m\n' "$line" ;;
@@ -17,16 +17,126 @@ dc_show_diff() {
 }
 
 dc_files_identical() {
-  # dc_files_identical <a> <b>  — returns 0 if identical, 1 if different
-  diff -q "$1" "$2" > /dev/null 2>&1
+  # dc_files_identical <a> <b>  — returns 0 if identical (ignoring whitespace), 1 if different
+  diff -bq "$1" "$2" > /dev/null 2>&1
+}
+
+# ── Hunk-by-hunk split apply ──────────────────────────────────────────────────
+
+_dc_split_apply() {
+  # _dc_split_apply <src> <dest> <label>
+  # Shows each diff hunk individually; user picks which to apply to dest.
+  # Returns 0 if any hunks were applied, 1 if none.
+  local src="$1" dest="$2" label="$3"
+  local pid="$$"
+  local tmp_work="/tmp/devconf_work.${pid}"
+  local tmp_combined="/tmp/devconf_combined.${pid}"
+  local applied_any=0 first_accepted=1 hunk_num=0 total_hunks=0
+
+  cp "$dest" "$tmp_work"
+
+  # Extract all hunks into individual temp files
+  diff -u -b "$dest" "$src" 2>/dev/null | awk -v pid="$pid" '
+    BEGIN { n=0; hdr1=""; hdr2=""; buf="" }
+    /^--- /  { hdr1=$0; next }
+    /^\+\+\+ / { hdr2=$0; next }
+    /^@@ / {
+      if (buf != "") {
+        f = "/tmp/devconf_h_" n "_" pid
+        print hdr1 > f; print hdr2 > f
+        printf "%s", buf > f
+        close(f); n++
+      }
+      buf = $0 "\n"; next
+    }
+    { buf = buf $0 "\n" }
+    END {
+      if (buf != "") {
+        f = "/tmp/devconf_h_" n "_" pid
+        print hdr1 > f; print hdr2 > f
+        printf "%s", buf > f
+        close(f); n++
+      }
+      print n > ("/tmp/devconf_hcount_" pid)
+    }
+  ' || true
+
+  if [ -f "/tmp/devconf_hcount_${pid}" ]; then
+    total_hunks=$(cat "/tmp/devconf_hcount_${pid}")
+    rm -f "/tmp/devconf_hcount_${pid}"
+  fi
+
+  if [ "$total_hunks" -eq 0 ]; then
+    dc_ok "$label (no meaningful differences)"
+    rm -f "$tmp_work"
+    return 1
+  fi
+
+  : > "$tmp_combined"
+
+  while [ "$hunk_num" -lt "$total_hunks" ]; do
+    local hunk_file="/tmp/devconf_h_${hunk_num}_${pid}"
+    local quit_split=0
+    dc_bold "─── $label: change $((hunk_num+1))/$total_hunks ───"
+    tail -n +3 "$hunk_file" | while IFS= read -r line; do
+      case "$line" in
+        +*) printf '\033[32m%s\033[0m\n' "$line" ;;
+        -*) printf '\033[31m%s\033[0m\n' "$line" ;;
+        *)  printf '%s\n' "$line" ;;
+      esac
+    done
+    printf '\n  [a]pply  [s]kip  [q]uit  > '
+    read -r _dc_hchoice
+    case "$_dc_hchoice" in
+      a|A)
+        if [ "$first_accepted" = "1" ]; then
+          cat "$hunk_file" >> "$tmp_combined"
+          first_accepted=0
+        else
+          tail -n +3 "$hunk_file" >> "$tmp_combined"
+        fi
+        applied_any=1
+        ;;
+      q|Q)
+        quit_split=1
+        ;;
+    esac
+    rm -f "$hunk_file"
+    hunk_num=$((hunk_num+1))
+    [ "$quit_split" = "1" ] && break
+  done
+
+  # Remove any remaining hunk files (if quit early)
+  while [ "$hunk_num" -lt "$total_hunks" ]; do
+    rm -f "/tmp/devconf_h_${hunk_num}_${pid}"
+    hunk_num=$((hunk_num+1))
+  done
+
+  if [ "$applied_any" = "1" ]; then
+    patch -u "$tmp_work" < "$tmp_combined" > /dev/null 2>&1 \
+      && cp "$tmp_work" "$dest" \
+      && dc_ok "$label (partial update applied)" \
+      || dc_warn "  Could not apply hunks cleanly; no changes made"
+  else
+    dc_skip "$label (no hunks applied)"
+  fi
+
+  rm -f "$tmp_work" "$tmp_combined"
+  return "$applied_any"
 }
 
 # ── Merge prompt (repo → live) ────────────────────────────────────────────────
 
 dc_merge_prompt() {
-  # dc_merge_prompt <src> <dest> <label>
-  # Shows diff and prompts: [a]ccept repo / [k]eep current / [e]dit in vim
+  # dc_merge_prompt <src> <dest> <label> [repo_file] [filter_sed]
+  #   src        = repo/template version (may be a temp expanded file)
+  #   dest       = live (current) version to update
+  #   label      = display name
+  #   repo_file  = actual repo path for [S]ync option (defaults to src)
+  #   filter_sed = sed expression applied to dest before writing to repo_file
   local src="$1" dest="$2" label="$3"
+  local repo_file="${4:-$1}"
+  local filter_sed="${5:-}"
 
   while true; do
     dc_bold "─── $label ───────────────────────────────────────"
@@ -35,17 +145,43 @@ dc_merge_prompt() {
     else
       dc_yellow "  (destination does not exist; will create)"
     fi
-    printf '\n  [a]ccept repo  [k]eep current  [e]dit in vim  > '
+    printf '\n  [k]eep ours  [u]pdate  [s]plit  [S]ync upstream  [e]dit  > '
     read -r _dc_choice
     case "$_dc_choice" in
-      a|A)
+      u|U)
         dc_ensure_parent "$dest"
         cp "$src" "$dest"
-        dc_ok "$label"
+        dc_ok "$label (updated)"
         return 0
         ;;
       k|K)
-        dc_skip "$label (keeping current)"
+        dc_skip "$label (keeping ours)"
+        return 0
+        ;;
+      s)
+        _dc_split_apply "$src" "$dest" "$label"
+        dc_files_identical "$dest" "$src" && return 0
+        ;;
+      S)
+        # Sync: push our live version to repo, commit, optional push
+        if [ -n "$filter_sed" ]; then
+          sed "$filter_sed" "$dest" > "$repo_file"
+        else
+          cp "$dest" "$repo_file"
+        fi
+        git -C "$DEVCONF_REPO" add "$repo_file"
+        local _default_msg="sync: $label from $(hostname)"
+        printf 'Commit message [%s]: ' "$_default_msg"
+        read -r _dc_smsg
+        [ -z "$_dc_smsg" ] && _dc_smsg="$_default_msg"
+        git -C "$DEVCONF_REPO" commit -m "$_dc_smsg"
+        printf 'Push to remote? [y/N] '
+        read -r _dc_spush
+        case "$_dc_spush" in
+          y|Y) git -C "$DEVCONF_REPO" push && dc_ok "Pushed." ;;
+          *) dc_info "Not pushed. Run: git -C \"$DEVCONF_REPO\" push" ;;
+        esac
+        dc_ok "$label (synced to repo)"
         return 0
         ;;
       e|E)
@@ -53,7 +189,7 @@ dc_merge_prompt() {
         # Re-loop to show updated diff
         ;;
       *)
-        dc_warn "Unknown choice '$_dc_choice'; enter a, k, or e"
+        dc_warn "Unknown choice; enter k, u, s, S, or e"
         ;;
     esac
   done

@@ -132,7 +132,9 @@ dc_configure_vim() {
   elif dc_files_identical "$tmp_vimrc" "$vim_init"; then
     dc_ok "vimrc"
   else
-    dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc"
+    dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc" \
+      "${DEVCONF_REPO}/configs/vim/vimrc" \
+      "s|${vim_prefix}|__VIM_PREFIX__|g"
   fi
   rm -f "$tmp_vimrc"
 
