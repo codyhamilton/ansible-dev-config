@@ -3,6 +3,11 @@
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+_dc_backup_file() {
+  # _dc_backup_file <path>  — create a timestamped backup if file exists
+  [ -f "$1" ] && cp "$1" "${1}.bak.$(date +%Y%m%d_%H%M%S)"
+}
+
 _dc_apply_file() {
   # _dc_apply_file <src> <dest> <label>
   local src="$1" dest="$2" label="$3"
@@ -13,6 +18,7 @@ _dc_apply_file() {
   elif dc_files_identical "$src" "$dest"; then
     dc_ok "$label"
   else
+    _dc_backup_file "$dest"
     dc_merge_prompt "$src" "$dest" "$label"
   fi
 }
@@ -132,6 +138,7 @@ dc_configure_vim() {
   elif dc_files_identical "$tmp_vimrc" "$vim_init"; then
     dc_ok "vimrc"
   else
+    _dc_backup_file "$vim_init"
     dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc" \
       "${DEVCONF_REPO}/configs/vim/vimrc" \
       "s|${vim_prefix}|__VIM_PREFIX__|g"

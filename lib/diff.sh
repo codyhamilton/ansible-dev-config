@@ -24,16 +24,24 @@ dc_files_identical() {
 # ── Hunk-by-hunk split apply ──────────────────────────────────────────────────
 
 _dc_split_apply() {
-  # _dc_split_apply <src> <dest> <label>
-  # Shows each diff hunk individually; user picks which to apply to dest.
-  # Returns 0 if any hunks were applied, 1 if none.
+  # _dc_split_apply <src> <dest> <label> [repo_file] [filter_sed]
+  # Shows each diff hunk individually; user picks per-hunk action:
+  #   [u]pdate  — apply hunk repo→live
+  #   [s]kip    — leave this hunk unchanged
+  #   [S]ync    — apply hunk live→repo (reverse) and stage
+  #   [q]uit    — stop processing remaining hunks
   local src="$1" dest="$2" label="$3"
+  local repo_file="${4:-$src}"
+  local filter_sed="${5:-}"
   local pid="$$"
   local tmp_work="/tmp/devconf_work.${pid}"
+  local tmp_repo_work="/tmp/devconf_repo_work.${pid}"
   local tmp_combined="/tmp/devconf_combined.${pid}"
-  local applied_any=0 first_accepted=1 hunk_num=0 total_hunks=0
+  local tmp_rcombined="/tmp/devconf_rcombined.${pid}"
+  local applied_any=0 synced_any=0 first_accepted=1 first_synced=1 hunk_num=0 total_hunks=0
 
   cp "$dest" "$tmp_work"
+  cp "$repo_file" "$tmp_repo_work"
 
   # Extract all hunks into individual temp files
   diff -u -b "$dest" "$src" 2>/dev/null | awk -v pid="$pid" '
@@ -68,11 +76,12 @@ _dc_split_apply() {
 
   if [ "$total_hunks" -eq 0 ]; then
     dc_ok "$label (no meaningful differences)"
-    rm -f "$tmp_work"
+    rm -f "$tmp_work" "$tmp_repo_work"
     return 1
   fi
 
   : > "$tmp_combined"
+  : > "$tmp_rcombined"
 
   while [ "$hunk_num" -lt "$total_hunks" ]; do
     local hunk_file="/tmp/devconf_h_${hunk_num}_${pid}"
@@ -85,10 +94,10 @@ _dc_split_apply() {
         *)  printf '%s\n' "$line" ;;
       esac
     done
-    printf '\n  [a]pply  [s]kip  [q]uit  > '
+    printf '\n  [u]pdate  [s]kip  [S]ync to repo  [q]uit  > '
     read -r _dc_hchoice
     case "$_dc_hchoice" in
-      a|A)
+      u|U)
         if [ "$first_accepted" = "1" ]; then
           cat "$hunk_file" >> "$tmp_combined"
           first_accepted=0
@@ -97,9 +106,19 @@ _dc_split_apply() {
         fi
         applied_any=1
         ;;
+      S)
+        if [ "$first_synced" = "1" ]; then
+          cat "$hunk_file" >> "$tmp_rcombined"
+          first_synced=0
+        else
+          tail -n +3 "$hunk_file" >> "$tmp_rcombined"
+        fi
+        synced_any=1
+        ;;
       q|Q)
         quit_split=1
         ;;
+      # s or any other key: skip
     esac
     rm -f "$hunk_file"
     hunk_num=$((hunk_num+1))
@@ -112,16 +131,34 @@ _dc_split_apply() {
     hunk_num=$((hunk_num+1))
   done
 
+  # Apply forward hunks (repo → live)
   if [ "$applied_any" = "1" ]; then
     patch -u "$tmp_work" < "$tmp_combined" > /dev/null 2>&1 \
       && cp "$tmp_work" "$dest" \
       && dc_ok "$label (partial update applied)" \
-      || dc_warn "  Could not apply hunks cleanly; no changes made"
-  else
+      || dc_warn "  Could not apply hunks cleanly; no changes made to live"
+  fi
+
+  # Apply reverse hunks (live → repo) and stage
+  if [ "$synced_any" = "1" ]; then
+    if patch -R "$tmp_repo_work" < "$tmp_rcombined" > /dev/null 2>&1; then
+      if [ -n "$filter_sed" ]; then
+        sed "$filter_sed" "$tmp_repo_work" > "$repo_file"
+      else
+        cp "$tmp_repo_work" "$repo_file"
+      fi
+      git -C "$DEVCONF_REPO" add "$repo_file"
+      dc_ok "$label (hunk(s) synced to repo; staged)"
+    else
+      dc_warn "  Could not reverse-apply hunk(s) to repo; no repo changes made"
+    fi
+  fi
+
+  if [ "$applied_any" = "0" ] && [ "$synced_any" = "0" ]; then
     dc_skip "$label (no hunks applied)"
   fi
 
-  rm -f "$tmp_work" "$tmp_combined"
+  rm -f "$tmp_work" "$tmp_repo_work" "$tmp_combined" "$tmp_rcombined"
   return "$applied_any"
 }
 
@@ -159,8 +196,8 @@ dc_merge_prompt() {
         return 0
         ;;
       s)
-        _dc_split_apply "$src" "$dest" "$label"
-        dc_files_identical "$dest" "$src" && return 0
+        _dc_split_apply "$src" "$dest" "$label" "$repo_file" "$filter_sed"
+        return 0
         ;;
       S)
         # Sync: push our live version to repo, commit, optional push

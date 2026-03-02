@@ -14,6 +14,7 @@ export DEVCONF_REPO
 . "${DEVCONF_REPO}/lib/diff.sh"
 . "${DEVCONF_REPO}/lib/configure.sh"
 . "${DEVCONF_REPO}/lib/sync.sh"
+. "${DEVCONF_REPO}/lib/remove.sh"
 
 # ── Top-level commands ────────────────────────────────────────────────────────
 
@@ -75,6 +76,33 @@ cmd_sync() {
   dc_sync_commit
 }
 
+cmd_remove() {
+  local target="${1:-}"
+  dc_detect_os
+  case "$target" in
+    bash)   dc_remove_bash ;;
+    git)    dc_remove_git ;;
+    vim)    dc_remove_vim ;;
+    tmux)   dc_remove_tmux ;;
+    cursor) dc_remove_cursor ;;
+    claude) dc_remove_claude ;;
+    all)
+      dc_bold "devconf remove all"
+      echo ""
+      dc_remove_bash;   echo ""
+      dc_remove_git;    echo ""
+      dc_remove_vim;    echo ""
+      dc_remove_tmux;   echo ""
+      dc_remove_cursor; echo ""
+      dc_remove_claude
+      ;;
+    *)
+      dc_red "Usage: devconf remove [bash|git|vim|tmux|cursor|claude|all]"
+      exit 1
+      ;;
+  esac
+}
+
 cmd_help() {
   cat << 'EOF'
 devconf — developer config manager
@@ -82,10 +110,11 @@ devconf — developer config manager
 Usage: devconf <command>
 
 Commands:
-  configure   Apply configs from repo to live system
-  update      Pull latest repo changes, then configure
-  sync        Copy live configs back to repo and commit
-  help        Show this help message
+  configure          Apply configs from repo to live system
+  update             Pull latest repo changes, then configure
+  sync               Copy live configs back to repo and commit
+  remove <module>    Remove a deployed config (bash|git|vim|tmux|cursor|claude|all)
+  help               Show this help message
 
 Repo: https://github.com/codyhamilton/ansible-dev-config
 EOF
@@ -96,6 +125,7 @@ case "${1:-}" in
   configure) cmd_configure ;;
   update)    cmd_update ;;
   sync)      cmd_sync ;;
+  remove)    shift; cmd_remove "${1:-}" ;;
   help|--help|-h|"") cmd_help ;;
   *)
     dc_red "Unknown command: $1"

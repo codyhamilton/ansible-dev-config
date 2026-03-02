@@ -9,24 +9,30 @@ call plug#begin('__VIM_PREFIX__/plugged')
 	Plug 'embear/vim-localvimrc'
 	Plug 'editorconfig/editorconfig-vim'
 	Plug 'tpope/vim-dispatch'
-	Plug 'xolox/vim-misc'
 
 	" Visual
-	Plug 'altercation/vim-colors-solarized'
+	if has('nvim')
+		Plug 'ishan9299/nvim-solarized-lua'
+	else
+		Plug 'altercation/vim-colors-solarized'
+	endif
 	Plug 'vim-airline/vim-airline'
 	Plug 'vim-airline/vim-airline-themes'
 
 	" Navigation
 	Plug 'scrooloose/nerdtree'
 	Plug 'jistr/vim-nerdtree-tabs'
-	Plug 'BurntSushi/ripgrep'
-	Plug 'nvim-lua/plenary.nvim'
-	Plug 'nvim-telescope/telescope.nvim'
+	if has('nvim')
+		Plug 'nvim-lua/plenary.nvim'
+		Plug 'greggh/claude-code.nvim'
+		Plug 'nvim-telescope/telescope.nvim'
+	else
+		Plug 'ctrlpvim/ctrlp.vim'
+	endif
 	Plug 'qpkorr/vim-bufkill'
   Plug 'majutsushi/tagbar'
 
 	" Completion / Linting / Debug
-	Plug 'valloric/youcompleteme', { 'do': './install.py --java-completer' }
 	Plug 'w0rp/ale'
   Plug 'joonty/vdebug'
 
@@ -69,6 +75,11 @@ call plug#begin('__VIM_PREFIX__/plugged')
 
 call plug#end()
 
+" Auto-install plugins on first run (empty plugged dir)
+if empty(glob('__VIM_PREFIX__/plugged'))
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
 " ===== Powerline ==============================
 set laststatus=2
 let g:airline#extensions#hunks#non_zero_only=1
@@ -97,6 +108,7 @@ set cursorline                 " Highline line under cursor. Nice but makes thin
 colorscheme solarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
+if has('termguicolors') | set termguicolors | endif
 
 " === Search Settings  ========================
 set incsearch        " Find the next match as we type the search
@@ -112,8 +124,8 @@ set nowb
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 
-silent !mkdir ~/.vim/backups > /dev/null 2>&1
-set undodir=~/.vim/backups
+silent !mkdir -p __VIM_PREFIX__/backups > /dev/null 2>&1
+set undodir=__VIM_PREFIX__/backups
 set undofile
 
 " ================ Indentation ======================
@@ -163,17 +175,15 @@ set guioptions=
 let g:localvimrc_sandbox=0
 let g:localvimrc_ask=0
 let g:EditorConfig_exclude_patterns = ['fugitive://.*']
-let g:ale_completion_enabled = 1
 
 " =============== Git & Diff ========================
 set diffopt=vertical
 
-" =============== Command-T =========================
+" ===== Emmet ================================
 let g:user_emmet_leader_key='<c-x>'
 
 " ===== Font Settings ===========================
 set t_Co=256
-let g:miniBufExplForceSyntaxEnable = 1
 
 " ===== NERDTree ================================
 let NERDTreeShowBookmarks=1
@@ -185,20 +195,6 @@ let NERDTreeChDirMode=2
 let NERDTreeQuitOnOpen=1
 let NERDTreeIgnore=['\.DS_Store', '\.git']
 let g:nerdtree_tabs_open_on_gui_startup = 0
-
-" ===== Syntastic ===============================
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 2
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
-let g:syntastic_less_use_less_lint = 0
-let g:colorizer_auto_filetype='less,scss,css,html'
-
-let g:UltiSnipsExpandTrigger="<C-Space>"
 
 let g:ale_linters = {
 \   'javascript': ['eslint'],
@@ -218,52 +214,60 @@ let g:multi_cursor_exit_from_insert_mode = 0
 
 " NERDTree
 nmap <Tab> :NERDTreeToggle<CR>
-nmap <leader><leader> :Telescope find_files<CR>
-nmap // :Telescope buffers<CR>
+if has('nvim')
+	nmap <leader><leader> :Telescope find_files<CR>
+	nmap // :Telescope buffers<CR>
+else
+	nmap <leader><leader> :CtrlP<CR>
+	nmap // :CtrlPBuffer<CR>
+endif
 
 " EasyMotion Mappings
-nmap <Leader> <Plug>(easymotion-prefix)
+nmap <Leader>e <Plug>(easymotion-prefix)
 
 " == Custom commands ==
 command! -nargs=+ CustomGrep execute 'silent Ggrep! <args>' | copen
 command! -nargs=1 -range To :<line1>,<line2>y c|:new +put!\ c <args> " Yank a line or range into a new file
-command CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
+command! CommitCleanup %g/^ *\(commit\|Author:\|Date:\|Merge:\|$\)/d
 command! Jsonify :%!python -m json.tool
 
-nmap <leader>conf :tabe ~/.config/nvim/init.vim<CR>
+if has('nvim')
+	nmap <leader>conf :tabe ~/.config/nvim/init.vim<CR>
+else
+	nmap <leader>conf :tabe ~/.vimrc<CR>
+endif
 " ======== Fix ========
 nnoremap <leader>r :EnMasse<CR>
-nmap <leader>fu :YcmCompleter FixIt<CR>
-nmap <leader>fr :YcmCompleter RefactorRename<Space>
-nmap  :YcmCompleter FixIt<CR>
-imap  <Esc>:YcmCompleter FixIt<CR>i
 
 " ======== GIT ========
 nmap <leader>gn :GitGutterNextHunk<CR>
 nmap <leader>gp :GitGutterPrevHunk<CR>
 nmap <leader>gr :GitGutterRevertHunk<CR>
 nmap <leader>gs :Git<CR>
-nmap <leader>gg :Telescope live_grep<CR>
+if has('nvim')
+	nmap <leader>gg :Telescope live_grep<CR>
+else
+	nmap <leader>gg :Ggrep!<Space>
+endif
 
 " ======= Light/dark theme =======
 nmap <leader>bl :set bg=light<CR>
 nmap <leader>bd :set bg=dark<CR>
 
 " ====== JumpTo  ======
-nmap <leader>jd :YcmCompleter GoToDefinition<CR>
-nmap <leader>jr :YcmCompleter GoToReferences<CR>
 nmap <leader>jj :NERDTreeFind<CR>
 
 " Terminal
-"nnoremap <leader>tt :tab terminal bash --login<CR>
-"nnoremap <leader>tv :vertical terminal bash --login<CR>
-"nnoremap <leader>ts :terminal bash --login<CR>
-
-" Terminal
-nnoremap <leader>tt :tabe term://bash\ --login<CR>i
-nnoremap <leader>tv :vsp term://bash\ --login<CR>i
-nnoremap <leader>ts :sp term://bash\ --login<CR>i
-tnoremap <leader><Esc> <C-\><C-n>
+if has('nvim')
+	nnoremap <leader>tt :tabe term://bash\ --login<CR>i
+	nnoremap <leader>tv :vsp term://bash\ --login<CR>i
+	nnoremap <leader>ts :sp term://bash\ --login<CR>i
+	tnoremap <leader><Esc> <C-\><C-n>
+else
+	nnoremap <leader>tt :tab terminal ++close bash --login<CR>
+	nnoremap <leader>tv :vertical terminal ++close bash --login<CR>
+	nnoremap <leader>ts :terminal ++close bash --login<CR>
+endif
 
 " Close the file without losing the window
 nmap <leader>bda :bufdo :bd<CR>
@@ -277,7 +281,9 @@ imap <C-v> <Esc>pi
 vnoremap // y/<C-R>"<CR>
 vnoremap <leader><Tab> :Tabularize /
 
+if has('nvim')
 lua << EOF
+require('claude-code').setup()
 require('telescope').setup{
 	defaults = {
 		file_ignore_patterns = {
@@ -287,6 +293,7 @@ require('telescope').setup{
 	}
 }
 EOF
+endif
 
 " ======= Claude layout =======
 " :Claude  — opens a 3-pane work layout in the current window:
