@@ -100,58 +100,34 @@ dc_configure_gitprompt_install() {
 
 # ── Vim ───────────────────────────────────────────────────────────────────────
 
-_dc_vim_prefix() {
-  if command -v nvim > /dev/null 2>&1; then
-    echo "${HOME}/.config/nvim"
-  else
-    echo "${HOME}/.vim"
-  fi
-}
-
-_dc_vim_init() {
-  local prefix
-  prefix="$(_dc_vim_prefix)"
-  if command -v nvim > /dev/null 2>&1; then
-    echo "${prefix}/init.vim"
-  else
-    echo "${HOME}/.vimrc"
-  fi
-}
-
-dc_configure_vim() {
-  dc_bold "Configuring vim..."
-  local vim_prefix vim_init tmp_vimrc
-  vim_prefix="$(_dc_vim_prefix)"
-  vim_init="$(_dc_vim_init)"
-  tmp_vimrc="/tmp/devconf_vimrc.$$"
+_dc_apply_vimrc() {
+  # _dc_apply_vimrc <vim_prefix> <vim_init>
+  local vim_prefix="$1" vim_init="$2"
+  local tmp_vimrc="/tmp/devconf_vimrc_$(basename "$vim_prefix").$$"
 
   dc_ensure_dir "$vim_prefix"
-
-  # Expand __VIM_PREFIX__ token
   sed "s|__VIM_PREFIX__|${vim_prefix}|g" \
     "${DEVCONF_REPO}/configs/vim/vimrc" > "$tmp_vimrc"
 
   if [ ! -f "$vim_init" ]; then
     dc_ensure_parent "$vim_init"
     cp "$tmp_vimrc" "$vim_init"
-    dc_ok "vimrc (created at $vim_init)"
+    dc_ok "vimrc → $vim_init (created)"
   elif dc_files_identical "$tmp_vimrc" "$vim_init"; then
-    dc_ok "vimrc"
+    dc_ok "vimrc → $vim_init"
   else
     _dc_backup_file "$vim_init"
-    dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc" \
+    dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc ($vim_init)" \
       "${DEVCONF_REPO}/configs/vim/vimrc" \
       "s|${vim_prefix}|__VIM_PREFIX__|g"
   fi
   rm -f "$tmp_vimrc"
 
   # OS-specific vim file
-  dc_detect_os
   local os_vim="${DEVCONF_REPO}/configs/vim/${DC_OS}.vim"
   if [ -f "$os_vim" ]; then
     _dc_apply_file "$os_vim" "${vim_prefix}/${DC_OS}.vim" "vim/${DC_OS}.vim"
-    # Source it from vimrc if not already included
-    if ! grep -qF "source.*${DC_OS}.vim" "$vim_init" 2>/dev/null; then
+    if ! grep -qF "${DC_OS}.vim" "$vim_init" 2>/dev/null; then
       echo "" >> "$vim_init"
       echo "source ${vim_prefix}/${DC_OS}.vim" >> "$vim_init"
       dc_ok "Added source for ${DC_OS}.vim in vimrc"
@@ -159,20 +135,47 @@ dc_configure_vim() {
   fi
 }
 
+dc_configure_vim() {
+  dc_bold "Configuring vim..."
+  dc_detect_os
+  if command -v nvim > /dev/null 2>&1; then
+    _dc_apply_vimrc "${HOME}/.config/nvim" "${HOME}/.config/nvim/init.vim"
+  fi
+  if command -v vim > /dev/null 2>&1; then
+    _dc_apply_vimrc "${HOME}/.vim" "${HOME}/.vimrc"
+  fi
+}
+
 dc_configure_vimplug() {
   dc_bold "Configuring vim-plug..."
-  local vim_prefix
-  vim_prefix="$(_dc_vim_prefix)"
-  local plug_path="${vim_prefix}/autoload/plug.vim"
-  if [ -f "$plug_path" ]; then
-    dc_ok "vim-plug (already installed)"
-  else
-    dc_require_cmd curl
-    dc_ensure_dir "${vim_prefix}/autoload"
-    curl -fsSLo "$plug_path" \
-      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-    dc_ok "vim-plug installed"
+  local plug_path installed=0
+  if command -v nvim > /dev/null 2>&1; then
+    plug_path="${HOME}/.config/nvim/autoload/plug.vim"
+    if [ -f "$plug_path" ]; then
+      dc_ok "vim-plug (nvim, already installed)"
+    else
+      dc_require_cmd curl
+      dc_ensure_dir "${HOME}/.config/nvim/autoload"
+      curl -fsSLo "$plug_path" \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+      dc_ok "vim-plug installed for nvim"
+    fi
+    installed=1
   fi
+  if command -v vim > /dev/null 2>&1; then
+    plug_path="${HOME}/.vim/autoload/plug.vim"
+    if [ -f "$plug_path" ]; then
+      dc_ok "vim-plug (vim, already installed)"
+    else
+      dc_require_cmd curl
+      dc_ensure_dir "${HOME}/.vim/autoload"
+      curl -fsSLo "$plug_path" \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+      dc_ok "vim-plug installed for vim"
+    fi
+    installed=1
+  fi
+  [ "$installed" = "0" ] && dc_skip "vim-plug (no vim/nvim found)"
 }
 
 # ── Cursor ────────────────────────────────────────────────────────────────────
@@ -185,8 +188,7 @@ dc_configure_cursor() {
     return
   fi
   dc_ensure_dir "$cursor_dir"
-  _dc_apply_file "${DEVCONF_REPO}/configs/cursor/argv.json" "${cursor_dir}/argv.json" "cursor/argv.json"
-  _dc_apply_file "${DEVCONF_REPO}/configs/cursor/mcp.json"  "${cursor_dir}/mcp.json"  "cursor/mcp.json"
+  _dc_apply_file "${DEVCONF_REPO}/configs/cursor/mcp.json" "${cursor_dir}/mcp.json" "cursor/mcp.json"
 }
 
 # ── Claude ────────────────────────────────────────────────────────────────────

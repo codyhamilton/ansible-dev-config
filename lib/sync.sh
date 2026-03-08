@@ -92,33 +92,32 @@ dc_sync_git_aliases() {
 
 # ── Vim ───────────────────────────────────────────────────────────────────────
 
-dc_sync_vim() {
-  dc_bold "Syncing vim config..."
-  local vim_prefix vim_init
-  if command -v nvim > /dev/null 2>&1; then
-    vim_prefix="${HOME}/.config/nvim"
-    vim_init="${vim_prefix}/init.vim"
-  else
-    vim_prefix="${HOME}/.vim"
-    vim_init="${HOME}/.vimrc"
-  fi
-
+_dc_sync_vimrc() {
+  # _dc_sync_vimrc <vim_prefix> <vim_init>
+  local vim_prefix="$1" vim_init="$2"
   if [ ! -f "$vim_init" ]; then
-    dc_skip "vimrc (not found at $vim_init)"
+    dc_skip "vimrc ($vim_init not found)"
     return
   fi
-
-  local tmp_repo="/tmp/devconf_vimrc_repo.$$"
-  # Reverse-substitute: replace actual prefix back to token
+  local tmp_repo="/tmp/devconf_vimrc_$(basename "$vim_prefix")_repo.$$"
   sed "s|${vim_prefix}|__VIM_PREFIX__|g" "$vim_init" > "$tmp_repo"
-
   if dc_files_identical "$tmp_repo" "${DEVCONF_REPO}/configs/vim/vimrc"; then
-    dc_ok "vimrc"
+    dc_ok "vimrc ($vim_init)"
   else
-    dc_sync_prompt "$tmp_repo" "${DEVCONF_REPO}/configs/vim/vimrc" "vimrc" \
+    dc_sync_prompt "$tmp_repo" "${DEVCONF_REPO}/configs/vim/vimrc" "vimrc ($vim_init)" \
       && _dc_sync_changed_add "${DEVCONF_REPO}/configs/vim/vimrc"
   fi
   rm -f "$tmp_repo"
+}
+
+dc_sync_vim() {
+  dc_bold "Syncing vim config..."
+  if command -v nvim > /dev/null 2>&1; then
+    _dc_sync_vimrc "${HOME}/.config/nvim" "${HOME}/.config/nvim/init.vim"
+  fi
+  if command -v vim > /dev/null 2>&1; then
+    _dc_sync_vimrc "${HOME}/.vim" "${HOME}/.vimrc"
+  fi
 }
 
 # ── Cursor ────────────────────────────────────────────────────────────────────
@@ -130,24 +129,7 @@ dc_sync_cursor() {
     dc_skip "Cursor (not installed)"
     return
   fi
-
-  # For argv.json: strip crash-reporter-id before comparing
-  local live_argv="${cursor_dir}/argv.json"
-  local repo_argv="${DEVCONF_REPO}/configs/cursor/argv.json"
-  if [ -f "$live_argv" ]; then
-    local tmp_argv="/tmp/devconf_argv.$$"
-    # Remove the crash-reporter-id line before syncing
-    grep -v '"crash-reporter-id"' "$live_argv" > "$tmp_argv"
-    if dc_files_identical "$tmp_argv" "$repo_argv"; then
-      dc_ok "cursor/argv.json"
-    else
-      dc_sync_prompt "$tmp_argv" "$repo_argv" "cursor/argv.json" \
-        && _dc_sync_changed_add "$repo_argv"
-    fi
-    rm -f "$tmp_argv"
-  fi
-
-  _dc_sync_file "${cursor_dir}/mcp.json" "$repo_argv/../mcp.json" "cursor/mcp.json"
+  _dc_sync_file "${cursor_dir}/mcp.json" "${DEVCONF_REPO}/configs/cursor/mcp.json" "cursor/mcp.json"
 }
 
 # ── Claude ────────────────────────────────────────────────────────────────────

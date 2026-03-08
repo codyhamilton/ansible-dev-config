@@ -62,14 +62,21 @@ dc_remove_git() {
 
 dc_remove_vim() {
   dc_bold "Removing vim config..."
-  local vim_prefix vim_init
-  vim_prefix="$(_dc_vim_prefix)"
-  vim_init="$(_dc_vim_init)"
-  if _dc_confirm "Remove $vim_init and $vim_prefix/?"; then
-    _dc_rm_file "$vim_init"   "vimrc"
-    _dc_rm_dir  "$vim_prefix" "vim prefix dir"
-  else
-    dc_skip "vim (kept)"
+  if command -v nvim > /dev/null 2>&1; then
+    if _dc_confirm "Remove ${HOME}/.config/nvim/init.vim and ${HOME}/.config/nvim/?"; then
+      _dc_rm_file "${HOME}/.config/nvim/init.vim" "nvim/init.vim"
+      _dc_rm_dir  "${HOME}/.config/nvim"          "nvim prefix dir"
+    else
+      dc_skip "nvim (kept)"
+    fi
+  fi
+  if command -v vim > /dev/null 2>&1; then
+    if _dc_confirm "Remove ${HOME}/.vimrc and ${HOME}/.vim/?"; then
+      _dc_rm_file "${HOME}/.vimrc" "vimrc"
+      _dc_rm_dir  "${HOME}/.vim"   "vim prefix dir"
+    else
+      dc_skip "vim (kept)"
+    fi
   fi
 }
 
@@ -89,8 +96,7 @@ dc_remove_tmux() {
 
 dc_remove_cursor() {
   dc_bold "Removing Cursor config..."
-  _dc_rm_file "${HOME}/.cursor/argv.json" "cursor/argv.json"
-  _dc_rm_file "${HOME}/.cursor/mcp.json"  "cursor/mcp.json"
+  _dc_rm_file "${HOME}/.cursor/mcp.json" "cursor/mcp.json"
 }
 
 # ── Claude ────────────────────────────────────────────────────────────────────
