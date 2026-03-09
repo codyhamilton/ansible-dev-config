@@ -34,7 +34,7 @@ call plug#begin('__VIM_PREFIX__/plugged')
 
 	" Completion / Linting / Debug
 	Plug 'w0rp/ale'
-  Plug 'joonty/vdebug'
+  "Plug 'joonty/vdebug'
 
 	" Filetypes
 	Plug 'tpope/vim-cucumber'
@@ -108,7 +108,6 @@ set cursorline                 " Highline line under cursor. Nice but makes thin
 colorscheme solarized          " Set the theme
 syntax on                      " Turn on syntax highlighting
 set background=dark
-if has('termguicolors') | set termguicolors | endif
 
 " === Search Settings  ========================
 set incsearch        " Find the next match as we type the search
