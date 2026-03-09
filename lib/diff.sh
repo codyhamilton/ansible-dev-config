@@ -94,10 +94,10 @@ _dc_split_apply() {
         *)  printf '%s\n' "$line" ;;
       esac
     done
-    printf '\n  [u]pdate  [s]kip  [S]ync to repo  [q]uit  > '
+    printf '\n  [U]pdate  [s]kip  [S]ync to repo  [q]uit  > '
     read -r _dc_hchoice
     case "$_dc_hchoice" in
-      u|U)
+      u|U|"")
         if [ "$first_accepted" = "1" ]; then
           cat "$hunk_file" >> "$tmp_combined"
           first_accepted=0
@@ -182,10 +182,10 @@ dc_merge_prompt() {
     else
       dc_yellow "  (destination does not exist; will create)"
     fi
-    printf '\n  [k]eep ours  [u]pdate  [s]plit  [S]ync upstream  [e]dit  > '
+    printf '\n  [k]eep ours  [U]pdate  [s]plit  [S]ync upstream  [e]dit  > '
     read -r _dc_choice
     case "$_dc_choice" in
-      u|U)
+      u|U|"")
         dc_ensure_parent "$dest"
         cp "$src" "$dest"
         dc_ok "$label (updated)"
