@@ -312,3 +312,68 @@ endfunction
 
 command! Claude call s:OpenClaude()
 nmap <leader>cl :Claude<CR>
+
+" ======= Help / Cheatsheet =======
+function! s:ShowHelp()
+  let l:lines = [
+    \ '  Vim Shortcuts Cheatsheet',
+    \ '  ========================',
+    \ '',
+    \ '  FILES & NAVIGATION',
+    \ '  <leader><leader>  Find files (Telescope / CtrlP)',
+    \ '  //                List open buffers',
+    \ '  <Tab>             Toggle NERDTree',
+    \ '  <leader>jj        Reveal current file in NERDTree',
+    \ '  <leader>conf      Open vimrc / init.vim',
+    \ '',
+    \ '  SEARCH',
+    \ '  <leader>gg        Live grep (Telescope / Ggrep)',
+    \ '  // (visual)       Search for selected text',
+    \ '  <leader>e         EasyMotion prefix',
+    \ '',
+    \ '  GIT',
+    \ '  <leader>gs        Git status (:Git)',
+    \ '  <leader>gn        Next git hunk',
+    \ '  <leader>gp        Previous git hunk',
+    \ '  <leader>gr        Revert git hunk',
+    \ '',
+    \ '  BUFFERS & WINDOWS',
+    \ '  <leader>q         Close buffer (keep window)',
+    \ '  <C-c>             Close buffer (keep window)',
+    \ '  <leader>bda       Close all buffers',
+    \ '  <leader>r         EnMasse (bulk edit matches)',
+    \ '',
+    \ '  TERMINAL',
+    \ '  <leader>tt        Open terminal in new tab',
+    \ '  <leader>tv        Open terminal vertical split',
+    \ '  <leader>ts        Open terminal split',
+    \ '  <leader><Esc>     Exit terminal mode (nvim)',
+    \ '',
+    \ '  THEME',
+    \ '  <leader>bl        Light background',
+    \ '  <leader>bd        Dark background',
+    \ '',
+    \ '  TEXT',
+    \ '  <C-s>             Save file',
+    \ '  <C-v> (insert)    Paste last yank',
+    \ '  <leader><Tab>     Tabularize (visual)',
+    \ '',
+    \ '  CLAUDE',
+    \ '  <leader>cl        Open Claude layout',
+    \ '',
+    \ '  Press q to close',
+    \ ]
+  let l:bufnr = bufnr('__vim_help__')
+  if l:bufnr != -1
+    execute 'bwipeout ' . l:bufnr
+  endif
+  botright new __vim_help__
+  setlocal buftype=nofile bufhidden=wipe noswapfile nobuflisted filetype=help
+  call setline(1, l:lines)
+  setlocal nomodifiable
+  nnoremap <buffer> q :bwipeout<CR>
+  resize 44
+endfunction
+
+command! VimHelp call s:ShowHelp()
+nmap <leader>? :VimHelp<CR>
