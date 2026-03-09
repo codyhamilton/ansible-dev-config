@@ -249,9 +249,8 @@ else
 	nmap <leader>gg :Ggrep!<Space>
 endif
 
-" ======= Light/dark theme =======
-nmap <leader>bl :set bg=light<CR>
-nmap <leader>bd :set bg=dark<CR>
+" ======= Light/dark theme toggle =======
+nmap <leader>bb :let &background = (&background == 'dark' ? 'light' : 'dark')<CR>
 
 " ====== JumpTo  ======
 nmap <leader>jj :NERDTreeFind<CR>
@@ -349,8 +348,7 @@ function! s:ShowHelp()
     \ '  <leader><Esc>     Exit terminal mode (nvim)',
     \ '',
     \ '  THEME',
-    \ '  <leader>bl        Light background',
-    \ '  <leader>bd        Dark background',
+    \ '  <leader>bb        Toggle light/dark background',
     \ '',
     \ '  TEXT',
     \ '  <C-s>             Save file',
@@ -371,7 +369,7 @@ function! s:ShowHelp()
   call setline(1, l:lines)
   setlocal nomodifiable
   nnoremap <buffer> q :bwipeout<CR>
-  resize 44
+  resize 43
 endfunction
 
 command! VimHelp call s:ShowHelp()
