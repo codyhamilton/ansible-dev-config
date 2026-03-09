@@ -109,6 +109,20 @@ _dc_apply_vimrc() {
   sed "s|__VIM_PREFIX__|${vim_prefix}|g" \
     "${DEVCONF_REPO}/configs/vim/vimrc" > "$tmp_vimrc"
 
+  # Append managed OS-specific block so the comparison accounts for it
+  local os_vim="${DEVCONF_REPO}/configs/vim/${DC_OS}.vim"
+  if [ -f "$os_vim" ]; then
+    {
+      printf '" devconf managed: os-specific begin\n'
+      printf 'source %s/%s.vim\n' "${vim_prefix}" "${DC_OS}"
+      printf '" devconf managed: os-specific end\n'
+    } >> "$tmp_vimrc"
+  fi
+
+  # filter_sed: normalize path and strip managed block when syncing live→repo
+  local filter_sed
+  filter_sed=$(printf 's|%s|__VIM_PREFIX__|g\n/^" devconf managed: os-specific begin/,/^" devconf managed: os-specific end/d' "${vim_prefix}")
+
   if [ ! -f "$vim_init" ]; then
     dc_ensure_parent "$vim_init"
     cp "$tmp_vimrc" "$vim_init"
@@ -119,19 +133,13 @@ _dc_apply_vimrc() {
     _dc_backup_file "$vim_init"
     dc_merge_prompt "$tmp_vimrc" "$vim_init" "vimrc ($vim_init)" \
       "${DEVCONF_REPO}/configs/vim/vimrc" \
-      "s|${vim_prefix}|__VIM_PREFIX__|g"
+      "$filter_sed"
   fi
   rm -f "$tmp_vimrc"
 
   # OS-specific vim file
-  local os_vim="${DEVCONF_REPO}/configs/vim/${DC_OS}.vim"
   if [ -f "$os_vim" ]; then
     _dc_apply_file "$os_vim" "${vim_prefix}/${DC_OS}.vim" "vim/${DC_OS}.vim"
-    if ! grep -qF "${DC_OS}.vim" "$vim_init" 2>/dev/null; then
-      echo "" >> "$vim_init"
-      echo "source ${vim_prefix}/${DC_OS}.vim" >> "$vim_init"
-      dc_ok "Added source for ${DC_OS}.vim in vimrc"
-    fi
   fi
 }
 

@@ -100,7 +100,10 @@ _dc_sync_vimrc() {
     return
   fi
   local tmp_repo="/tmp/devconf_vimrc_$(basename "$vim_prefix")_repo.$$"
-  sed "s|${vim_prefix}|__VIM_PREFIX__|g" "$vim_init" > "$tmp_repo"
+  # Normalize live vimrc: replace vim_prefix path and strip managed os-specific block
+  sed "s|${vim_prefix}|__VIM_PREFIX__|g" "$vim_init" \
+    | sed '/^" devconf managed: os-specific begin/,/^" devconf managed: os-specific end/d' \
+    > "$tmp_repo"
   if dc_files_identical "$tmp_repo" "${DEVCONF_REPO}/configs/vim/vimrc"; then
     dc_ok "vimrc ($vim_init)"
   else
@@ -165,24 +168,10 @@ dc_sync_commit() {
   # shellcheck disable=SC2086
   git -C "$DEVCONF_REPO" add $_DC_SYNC_CHANGED
 
-  # Prompt for commit message
   local default_msg="sync: update configs from $(hostname)"
-  printf '\nCommit message [%s]: ' "$default_msg"
-  read -r _dc_msg
-  [ -z "$_dc_msg" ] && _dc_msg="$default_msg"
+  git -C "$DEVCONF_REPO" commit -m "$default_msg"
+  dc_ok "Committed: $default_msg"
 
-  git -C "$DEVCONF_REPO" commit -m "$_dc_msg"
-
-  # Ask to push
-  printf '\nPush to remote? [y/N] '
-  read -r _dc_push
-  case "$_dc_push" in
-    y|Y)
-      git -C "$DEVCONF_REPO" push
-      dc_ok "Pushed."
-      ;;
-    *)
-      dc_info "Not pushed. Run: git -C \"$DEVCONF_REPO\" push"
-      ;;
-  esac
+  git -C "$DEVCONF_REPO" push
+  dc_ok "Pushed."
 }
