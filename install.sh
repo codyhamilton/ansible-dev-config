@@ -47,6 +47,7 @@ ln -sf "${DEVCONF_INSTALL_DIR}/bin/devconf" "$DEVCONF_BIN"
 chmod +x "${DEVCONF_INSTALL_DIR}/bin/devconf"
 _ok "Symlink: $DEVCONF_BIN → ${DEVCONF_INSTALL_DIR}/bin/devconf"
 
+
 # ── Add ~/.local/bin to PATH (idempotent, marker-guarded) ─────────────────────
 
 if [ "$(uname -s)" = "Darwin" ]; then

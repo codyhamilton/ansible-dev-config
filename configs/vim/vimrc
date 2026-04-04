@@ -2,8 +2,11 @@
  " This must be first, because it changes other options as a side effect.
 set nocompatible
 
+" Resolve prefix: nvim uses stdpath('data'), vim uses ~/.vim
+let g:dc_prefix = has('nvim') ? stdpath('data') : expand('~/.vim')
+
 " ================ Plugin Init ====================
-call plug#begin('__VIM_PREFIX__/plugged')
+call plug#begin(g:dc_prefix . '/plugged')
 
 	" Core
 	Plug 'embear/vim-localvimrc'
@@ -76,7 +79,7 @@ call plug#begin('__VIM_PREFIX__/plugged')
 call plug#end()
 
 " Auto-install plugins on first run (empty plugged dir)
-if empty(glob('__VIM_PREFIX__/plugged'))
+if empty(glob(g:dc_prefix . '/plugged'))
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
@@ -123,8 +126,8 @@ set nowb
 " Keep undo history across sessions, by storing in file.
 " Only works all the time.
 
-silent !mkdir -p __VIM_PREFIX__/backups > /dev/null 2>&1
-set undodir=__VIM_PREFIX__/backups
+silent execute '!mkdir -p ' . g:dc_prefix . '/backups > /dev/null 2>&1'
+let &undodir = g:dc_prefix . '/backups'
 set undofile
 
 " ================ Indentation ======================

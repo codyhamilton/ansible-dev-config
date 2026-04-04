@@ -1,0 +1,161 @@
+#!/bin/sh
+# bin/devcon — devcontainer lifecycle wrapper
+# Provides: start, exec, destroy, update, status for devcontainers
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+_dc_bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
+_dc_green() { printf '\033[32m%s\033[0m\n' "$*"; }
+_dc_red()   { printf '\033[31m%s\033[0m\n' "$*" >&2; }
+
+_dc_require_cmd() {
+    command -v "$1" > /dev/null 2>&1 || { _dc_red "Required command not found: $1"; exit 1; }
+}
+
+_dc_has_devcontainer() {
+    [ -d "$1/.devcontainer" ] || [ -f "$1/devcontainer.json" ]
+}
+
+_dc_workspace() {
+    local dir="${1:-$PWD}"
+    dir="$(cd "$dir" 2>/dev/null && pwd)" || { _dc_red "Directory not found: $1"; exit 1; }
+    if ! _dc_has_devcontainer "$dir"; then
+        _dc_red "No .devcontainer found in: $dir"
+        exit 1
+    fi
+    printf '%s' "$dir"
+}
+
+# Locate a running container for a workspace via docker label
+_dc_container_id() {
+    docker ps -q --filter "label=devcontainer.local_folder=$1" 2>/dev/null | head -1
+}
+
+# ── Commands ──────────────────────────────────────────────────────────────────
+
+cmd_start() {
+    _dc_require_cmd devcontainer
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    _dc_bold "devcon start: $workspace"
+    devcontainer up --workspace-folder "$workspace"
+}
+
+cmd_exec() {
+    _dc_require_cmd devcontainer
+    local workspace cmd
+
+    # Use first arg as workspace if it looks like a devcontainer project dir
+    if [ -n "${1:-}" ] && _dc_has_devcontainer "${1:-}"; then
+        workspace="$(_dc_workspace "$1")"
+        shift
+    else
+        workspace="$(_dc_workspace "$PWD")"
+    fi
+
+    cmd="${*:-bash}"
+    _dc_bold "devcon exec ($workspace): $cmd"
+    # shellcheck disable=SC2086
+    devcontainer exec --workspace-folder "$workspace" -- $cmd
+}
+
+cmd_destroy() {
+    _dc_require_cmd docker
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    local cid; cid="$(_dc_container_id "$workspace")"
+    if [ -z "$cid" ]; then
+        _dc_red "No running container for: $workspace"
+        exit 1
+    fi
+    _dc_bold "devcon destroy: $cid"
+    docker stop "$cid"
+    docker rm "$cid"
+    _dc_green "Container removed."
+}
+
+cmd_update() {
+    _dc_require_cmd devcontainer
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    _dc_bold "devcon update: $workspace"
+    devcontainer up --workspace-folder "$workspace" --remove-existing-container
+}
+
+cmd_status() {
+    _dc_require_cmd docker
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    local cid; cid="$(_dc_container_id "$workspace")"
+    if [ -z "$cid" ]; then
+        printf '  no container running for: %s\n' "$workspace"
+    else
+        _dc_green "running: $cid"
+        docker inspect --format \
+            '  image:   {{.Config.Image}}{{"\n"}}  created: {{.Created}}{{"\n"}}  status:  {{.State.Status}}' \
+            "$cid"
+        echo ""
+    fi
+}
+
+cmd_claude() {
+    _dc_require_cmd devcontainer
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    _dc_bold "devcon claude: $workspace"
+    devcontainer up --workspace-folder "$workspace"
+    devcontainer exec --workspace-folder "$workspace" -- claude --dangerously-skip-permissions --chrome
+}
+
+cmd_codex() {
+    _dc_require_cmd devcontainer
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    _dc_bold "devcon codex: $workspace"
+    devcontainer up --workspace-folder "$workspace"
+    devcontainer exec --workspace-folder "$workspace" -- codex --dangerously-bypass-approvals-and-sandbox
+}
+
+cmd_help() {
+    cat << 'EOF'
+devcon — devcontainer lifecycle wrapper
+
+Usage:
+  devcon <command> [workspace-dir] [args...]
+
+Commands:
+  start   [dir]        Bring up the devcontainer (devcontainer up)
+  exec    [dir] [cmd]  Exec a command inside the container (default: bash)
+  claude  [dir]        Start container and run claude (bypass permissions)
+  codex   [dir]        Start container and run codex (bypass approvals)
+  destroy [dir]        Stop and remove the container
+  update  [dir]        Rebuild the image and restart (--remove-existing-container)
+  status  [dir]        Show running container info
+  help                 Show this help message
+
+[dir] defaults to the current working directory.
+The directory must contain .devcontainer/ or devcontainer.json.
+
+Examples:
+  devcon start                       start container in current dir
+  devcon claude                      run claude (with bypass flags) in current dir
+  devcon codex /path/to/project      run codex in a specific project
+  devcon exec /path/to/project bash  open a shell in a specific project
+  devcon update                      rebuild and restart current container
+  devcon destroy                     stop and remove current container
+  devcon status                      check if a container is running
+EOF
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+
+case "${1:-}" in
+    start)             shift; cmd_start   "$@" ;;
+    exec)              shift; cmd_exec    "$@" ;;
+    claude)            shift; cmd_claude  "$@" ;;
+    codex)             shift; cmd_codex   "$@" ;;
+    destroy)           shift; cmd_destroy "$@" ;;
+    update)            shift; cmd_update  "$@" ;;
+    status)            shift; cmd_status  "$@" ;;
+    help|--help|-h|"") cmd_help ;;
+    *)
+        _dc_red "Unknown command: $1"
+        echo ""
+        cmd_help
+        exit 1
+        ;;
+esac

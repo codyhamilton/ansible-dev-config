@@ -1,6 +1,5 @@
 #!/bin/sh
 # bin/devconf — devconf CLI dispatcher
-# Resolves its own location (handles symlinks), sources lib/, dispatches commands.
 
 set -e
 
@@ -12,109 +11,136 @@ export DEVCONF_REPO
 # ── Source libs ───────────────────────────────────────────────────────────────
 . "${DEVCONF_REPO}/lib/utils.sh"
 . "${DEVCONF_REPO}/lib/diff.sh"
-. "${DEVCONF_REPO}/lib/configure.sh"
-. "${DEVCONF_REPO}/lib/sync.sh"
-. "${DEVCONF_REPO}/lib/remove.sh"
+. "${DEVCONF_REPO}/lib/hooks.sh"
+
+# ── Hook runner ───────────────────────────────────────────────────────────────
+
+# Walk configs/*/install.sh, set DC_CONFIG_DIR + DC_MODE, source each hook
+_dc_run_hooks() {
+    dc_detect_os
+    for _hook in "${DEVCONF_REPO}"/configs/*/install.sh; do
+        [ -f "$_hook" ] || continue
+        DC_CONFIG_DIR="$(dirname "$_hook")"
+        export DC_CONFIG_DIR
+        _domain="$(basename "$DC_CONFIG_DIR")"
+        dc_bold "[$_domain]"
+        . "$_hook" || true
+        echo ""
+    done
+}
 
 # ── Top-level commands ────────────────────────────────────────────────────────
 
 cmd_configure() {
-  dc_detect_os
-  dc_bold "devconf configure (OS: $DC_OS)"
-  echo ""
-  dc_configure_bash
-  echo ""
-  dc_configure_git_files
-  echo ""
-  dc_configure_git_aliases
-  echo ""
-  dc_configure_gitprompt_install
-  echo ""
-  dc_configure_vim
-  echo ""
-  dc_configure_vimplug
-  echo ""
-  dc_configure_cursor
-  echo ""
-  dc_configure_claude
-  echo ""
-  dc_configure_tmux
-  echo ""
-  dc_green "Done. You may need to: source $(dc_profile_file)"
-}
-
-cmd_update() {
-  dc_bold "devconf update"
-  echo ""
-  dc_require_cmd git
-  if ! git -C "$DEVCONF_REPO" pull --rebase; then
-    dc_err "git pull --rebase failed. Resolve conflicts in $DEVCONF_REPO, then run: devconf configure"
-    exit 1
-  fi
-  echo ""
-  cmd_configure
+    DC_MODE=configure
+    export DC_MODE
+    dc_bold "devconf configure"
+    echo ""
+    _dc_run_hooks
+    dc_green "Done. You may need to: source $(dc_profile_file)"
 }
 
 cmd_sync() {
-  dc_detect_os
-  dc_bold "devconf sync (OS: $DC_OS)"
-  echo ""
-  dc_sync_bash
-  echo ""
-  dc_sync_git_files
-  echo ""
-  dc_sync_git_aliases
-  echo ""
-  dc_sync_vim
-  echo ""
-  dc_sync_cursor
-  echo ""
-  dc_sync_claude
-  echo ""
-  dc_sync_tmux
-  echo ""
-  dc_sync_commit
+    dc_require_cmd git
+    DC_MODE=sync
+    export DC_MODE
+    dc_bold "devconf sync"
+    echo ""
+    _dc_run_hooks
+
+    # Commit changed configs
+    if git -C "$DEVCONF_REPO" diff --quiet -- configs/ && \
+       git -C "$DEVCONF_REPO" diff --cached --quiet -- configs/; then
+        dc_ok "Nothing changed; no commit needed."
+        return
+    fi
+
+    dc_bold "Changed files:"
+    git -C "$DEVCONF_REPO" diff --name-only -- configs/
+    git -C "$DEVCONF_REPO" diff --cached --name-only -- configs/
+    echo ""
+
+    git -C "$DEVCONF_REPO" add -- configs/
+
+    _default_msg="sync: update configs from $(hostname)"
+    printf 'Commit message [%s]: ' "$_default_msg"
+    read -r _dc_msg
+    [ -z "$_dc_msg" ] && _dc_msg="$_default_msg"
+    git -C "$DEVCONF_REPO" commit -m "$_dc_msg"
+
+    printf '\nPush to remote? [y/N] '
+    read -r _dc_push
+    case "$_dc_push" in
+        y|Y) git -C "$DEVCONF_REPO" push; dc_ok "Pushed." ;;
+        *)   dc_info "Not pushed. Run: git -C \"$DEVCONF_REPO\" push" ;;
+    esac
+}
+
+cmd_update() {
+    dc_bold "devconf update"
+    echo ""
+    dc_require_cmd git
+    if ! git -C "$DEVCONF_REPO" pull --rebase; then
+        dc_err "git pull --rebase failed. Resolve conflicts in $DEVCONF_REPO, then run: devconf configure"
+        exit 1
+    fi
+    echo ""
+    cmd_configure
 }
 
 cmd_remove() {
-  local target="${1:-}"
-  dc_detect_os
-  case "$target" in
-    bash)   dc_remove_bash ;;
-    git)    dc_remove_git ;;
-    vim)    dc_remove_vim ;;
-    tmux)   dc_remove_tmux ;;
-    cursor) dc_remove_cursor ;;
-    claude) dc_remove_claude ;;
-    all)
-      dc_bold "devconf remove all"
-      echo ""
-      dc_remove_bash;   echo ""
-      dc_remove_git;    echo ""
-      dc_remove_vim;    echo ""
-      dc_remove_tmux;   echo ""
-      dc_remove_cursor; echo ""
-      dc_remove_claude
-      ;;
-    *)
-      dc_red "Usage: devconf remove [bash|git|vim|tmux|cursor|claude|all]"
-      exit 1
-      ;;
-  esac
+    _target="${1:-}"
+    if [ "$_target" = "all" ]; then
+        dc_bold "devconf remove all"
+        echo ""
+        for _hook in "${DEVCONF_REPO}"/configs/*/uninstall.sh; do
+            [ -f "$_hook" ] || continue
+            DC_CONFIG_DIR="$(dirname "$_hook")"
+            export DC_CONFIG_DIR
+            _domain="$(basename "$DC_CONFIG_DIR")"
+            dc_bold "[$_domain]"
+            dc_detect_os
+            . "$_hook" || true
+            echo ""
+        done
+    elif [ -n "$_target" ]; then
+        _hook="${DEVCONF_REPO}/configs/${_target}/uninstall.sh"
+        if [ ! -f "$_hook" ]; then
+            dc_err "No uninstall hook for: $_target"
+            exit 1
+        fi
+        DC_CONFIG_DIR="${DEVCONF_REPO}/configs/${_target}"
+        export DC_CONFIG_DIR
+        dc_detect_os
+        dc_bold "devconf remove $_target"
+        echo ""
+        . "$_hook" || true
+    else
+        dc_red "Usage: devconf remove <module|all>"
+        exit 1
+    fi
 }
 
 cmd_help() {
-  cat << 'EOF'
+    # Build module list from configs/ directory names
+    _modules=""
+    for _d in "${DEVCONF_REPO}"/configs/*/; do
+        [ -d "$_d" ] || continue
+        _mod="$(basename "$_d")"
+        _modules="${_modules:+$_modules|}$_mod"
+    done
+
+    cat << EOF
 devconf — developer config manager
 
 Usage: devconf <command>
 
 Commands:
-  configure          Apply configs from repo to live system
-  update             Pull latest repo changes, then configure
-  sync               Copy live configs back to repo and commit
-  remove <module>    Remove a deployed config (bash|git|vim|tmux|cursor|claude|all)
-  help               Show this help message
+  configure            Apply configs from repo to live system
+  update               Pull latest repo changes, then configure
+  sync                 Sync live configs back to repo and commit
+  remove <module|all>  Remove a deployed config ($_modules|all)
+  help                 Show this help message
 
 Repo: https://github.com/codyhamilton/ansible-dev-config
 EOF
@@ -122,15 +148,15 @@ EOF
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
 case "${1:-}" in
-  configure) cmd_configure ;;
-  update)    cmd_update ;;
-  sync)      cmd_sync ;;
-  remove)    shift; cmd_remove "${1:-}" ;;
-  help|--help|-h|"") cmd_help ;;
-  *)
-    dc_red "Unknown command: $1"
-    echo ""
-    cmd_help
-    exit 1
-    ;;
+    configure) cmd_configure ;;
+    update)    cmd_update ;;
+    sync)      cmd_sync ;;
+    remove)    shift; cmd_remove "${1:-}" ;;
+    help|--help|-h|"") cmd_help ;;
+    *)
+        dc_red "Unknown command: $1"
+        echo ""
+        cmd_help
+        exit 1
+        ;;
 esac
