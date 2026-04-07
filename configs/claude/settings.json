@@ -1,1 +1,38 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mcp__supabase-local__list_migrations:*)",
+      "Bash(supabase status:*)",
+      "mcp__supabase-local__list_migrations",
+      "Bash(npm run:*)",
+      "mcp__supabase-local__execute_sql",
+      "mcp__supabase-local__get_advisors",
+      "mcp__supabase-local__apply_migration",
+      "Bash(git add:*)",
+      "Bash(grep:*)",
+      "mcp__supabase-local__get_logs",
+      "mcp__supabase-local__search_docs",
+      "WebFetch(domain:supabase.com)",
+      "Bash(python3:*)",
+      "Bash(docker ps:*)",
+      "Bash(node:*)",
+      "mcp__supabase-local__get_project_url",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i \"s|vi.mock\\(''\\\\$lib/utils/supabase''\\)|vi.mock\\(''$lib/utils/supabase.server''\\)|g\" \"$f\")",
+      "Bash(done)",
+      "Bash(git commit:*)"
+    ],
+    "defaultMode": "default"
+  },
+  "enabledPlugins": {
+    "github@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true
+}

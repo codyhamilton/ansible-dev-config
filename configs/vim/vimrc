@@ -195,7 +195,7 @@ let NERDTreeAutoCenterThreshold=0
 let NERDTreeShowHidden=1
 let NERDTreeChDirMode=2
 let NERDTreeQuitOnOpen=1
-let NERDTreeIgnore=['\.DS_Store', '\.git']
+let NERDTreeIgnore=['\.DS_Store', '\.git\']
 let g:nerdtree_tabs_open_on_gui_startup = 0
 
 let g:ale_linters = {
