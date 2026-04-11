@@ -66,12 +66,22 @@ cmd_sync() {
     printf 'Commit message [%s]: ' "$_default_msg"
     read -r _dc_msg
     [ -z "$_dc_msg" ] && _dc_msg="$_default_msg"
-    git -C "$DEVCONF_REPO" commit -m "$_dc_msg"
+    if ! git -C "$DEVCONF_REPO" commit -m "$_dc_msg"; then
+        dc_err "Commit failed. Check git status in $DEVCONF_REPO"
+        exit 1
+    fi
 
     printf '\nPush to remote? [y/N] '
     read -r _dc_push
     case "$_dc_push" in
-        y|Y) git -C "$DEVCONF_REPO" push; dc_ok "Pushed." ;;
+        y|Y)
+            if git -C "$DEVCONF_REPO" push; then
+                dc_ok "Pushed."
+            else
+                dc_err "Push failed. Run: git -C \"$DEVCONF_REPO\" push"
+                exit 1
+            fi
+            ;;
         *)   dc_info "Not pushed. Run: git -C \"$DEVCONF_REPO\" push" ;;
     esac
 }

@@ -211,11 +211,21 @@ dc_merge_prompt() {
         printf 'Commit message [%s]: ' "$_default_msg"
         read -r _dc_smsg
         [ -z "$_dc_smsg" ] && _dc_smsg="$_default_msg"
-        git -C "$DEVCONF_REPO" commit -m "$_dc_smsg"
+        if ! git -C "$DEVCONF_REPO" commit -m "$_dc_smsg"; then
+          dc_err "Commit failed for $label. Check git status in $DEVCONF_REPO"
+          exit 1
+        fi
         printf 'Push to remote? [y/N] '
         read -r _dc_spush
         case "$_dc_spush" in
-          y|Y) git -C "$DEVCONF_REPO" push && dc_ok "Pushed." ;;
+          y|Y)
+            if git -C "$DEVCONF_REPO" push; then
+              dc_ok "Pushed $label."
+            else
+              dc_err "Push failed for $label. Run: git -C \"$DEVCONF_REPO\" push"
+              exit 1
+            fi
+            ;;
           *) dc_info "Not pushed. Run: git -C \"$DEVCONF_REPO\" push" ;;
         esac
         dc_ok "$label (synced to repo)"
