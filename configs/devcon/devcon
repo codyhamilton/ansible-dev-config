@@ -110,6 +110,17 @@ cmd_codex() {
     devcontainer exec --workspace-folder "$workspace" -- codex --dangerously-bypass-approvals-and-sandbox
 }
 
+cmd_rebuild() {
+    _dc_require_cmd devcontainer
+    _dc_require_cmd docker
+    local workspace; workspace="$(_dc_workspace "${1:-}")"
+    _dc_bold "devcon rebuild: $workspace"
+    echo ""
+    cmd_destroy "$workspace" || true
+    echo ""
+    cmd_start "$workspace"
+}
+
 cmd_help() {
     cat << 'EOF'
 devcon — devcontainer lifecycle wrapper
@@ -118,13 +129,14 @@ Usage:
   devcon <command> [workspace-dir] [args...]
 
 Commands:
-  start   [dir]        Bring up the devcontainer (devcontainer up)
-  exec    [dir] [cmd]  Exec a command inside the container (default: bash)
-  claude  [dir]        Start container and run claude (bypass permissions)
-  codex   [dir]        Start container and run codex (bypass approvals)
-  destroy [dir]        Stop and remove the container
-  update  [dir]        Rebuild the image and restart (--remove-existing-container)
-  status  [dir]        Show running container info
+  start    [dir]       Bring up the devcontainer (devcontainer up)
+  exec     [dir] [cmd] Exec a command inside the container (default: bash)
+  claude   [dir]       Start container and run claude (bypass permissions)
+  codex    [dir]       Start container and run codex (bypass approvals)
+  destroy  [dir]       Stop and remove the container
+  update   [dir]       Rebuild the image and restart (--remove-existing-container)
+  rebuild  [dir]       Destroy and start the container
+  status   [dir]       Show running container info
   help                 Show this help message
 
 [dir] defaults to the current working directory.
@@ -135,7 +147,8 @@ Examples:
   devcon claude                      run claude (with bypass flags) in current dir
   devcon codex /path/to/project      run codex in a specific project
   devcon exec /path/to/project bash  open a shell in a specific project
-  devcon update                      rebuild and restart current container
+  devcon update                      rebuild image and restart current container
+  devcon rebuild                     destroy and start current container
   devcon destroy                     stop and remove current container
   devcon status                      check if a container is running
 EOF
@@ -150,6 +163,7 @@ case "${1:-}" in
     codex)             shift; cmd_codex   "$@" ;;
     destroy)           shift; cmd_destroy "$@" ;;
     update)            shift; cmd_update  "$@" ;;
+    rebuild)           shift; cmd_rebuild "$@" ;;
     status)            shift; cmd_status  "$@" ;;
     help|--help|-h|"") cmd_help ;;
     *)
