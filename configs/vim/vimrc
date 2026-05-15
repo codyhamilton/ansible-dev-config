@@ -397,9 +397,8 @@ if ok_cmp_lsp then
 end
 
 -- ── clangd (C/C++) ───────────────────────────────────────────────────────
-local ok_lsp, lspconfig = pcall(require, 'lspconfig')
-if ok_lsp then
-  lspconfig.clangd.setup({
+if vim.lsp and vim.lsp.config then
+  vim.lsp.config('clangd', {
     capabilities = capabilities,
     on_attach    = lsp_on_attach,
     cmd = {
@@ -411,7 +410,27 @@ if ok_lsp then
       '--all-scopes-completion',
       '--suggest-missing-includes',
     },
+    filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda', 'proto' },
+    root_markers = { 'compile_commands.json', 'compile_flags.txt', '.git' },
   })
+  vim.lsp.enable('clangd')
+else
+  local ok_lsp, lspconfig = pcall(require, 'lspconfig')
+  if ok_lsp then
+    lspconfig.clangd.setup({
+      capabilities = capabilities,
+      on_attach    = lsp_on_attach,
+      cmd = {
+        'clangd',
+        '--background-index',
+        '--clang-tidy',
+        '--header-insertion=iwyu',
+        '--completion-style=detailed',
+        '--all-scopes-completion',
+        '--suggest-missing-includes',
+      },
+    })
+  end
 end
 
 -- ── Treesitter ────────────────────────────────────────────────────────────
