@@ -29,6 +29,18 @@ call plug#begin(g:dc_prefix . '/plugged')
 		Plug 'nvim-lua/plenary.nvim'
 		Plug 'greggh/claude-code.nvim'
 		Plug 'nvim-telescope/telescope.nvim'
+
+		" LSP + completion (nvim-only)
+		Plug 'williamboman/mason.nvim'
+		Plug 'williamboman/mason-lspconfig.nvim'
+		Plug 'neovim/nvim-lspconfig'
+		Plug 'hrsh7th/nvim-cmp'
+		Plug 'hrsh7th/cmp-nvim-lsp'
+		Plug 'hrsh7th/cmp-buffer'
+		Plug 'hrsh7th/cmp-path'
+
+		" Treesitter (nvim-only)
+		Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 	else
 		Plug 'ctrlpvim/ctrlp.vim'
 	endif
@@ -198,9 +210,18 @@ let NERDTreeQuitOnOpen=1
 let NERDTreeIgnore=['\.DS_Store', '\.git\']
 let g:nerdtree_tabs_open_on_gui_startup = 0
 
-let g:ale_linters = {
-\   'javascript': ['eslint'],
-\}
+" In nvim, clangd LSP handles C — ALE only lints JS.
+" In vim, ALE also handles C via the system compiler.
+if has('nvim')
+  let g:ale_linters = {
+  \   'javascript': ['eslint'],
+  \}
+else
+  let g:ale_linters = {
+  \   'javascript': ['eslint'],
+  \   'c':          ['cc', 'cppcheck'],
+  \}
+endif
 " ===== Core mappings =====
 "
 " Save file
@@ -284,15 +305,97 @@ vnoremap <leader><Tab> :Tabularize /
 
 if has('nvim')
 lua << EOF
+-- ── Existing plugins ──────────────────────────────────────────────────────
 require('claude-code').setup()
 require('telescope').setup{
-	defaults = {
-		file_ignore_patterns = {
-			'node_modules',
-			'.git'
-		}
-	}
+  defaults = {
+    file_ignore_patterns = { 'node_modules', '.git' }
+  }
 }
+
+-- ── Mason (LSP auto-installer) ────────────────────────────────────────────
+local ok_mason, mason = pcall(require, 'mason')
+if ok_mason then
+  mason.setup()
+  local ok_mlsp, mlsp = pcall(require, 'mason-lspconfig')
+  if ok_mlsp then
+    mlsp.setup({
+      ensure_installed = { 'clangd' },
+      automatic_installation = true,
+    })
+  end
+end
+
+-- ── nvim-cmp completion ───────────────────────────────────────────────────
+local ok_cmp, cmp = pcall(require, 'cmp')
+if ok_cmp then
+  cmp.setup({
+    mapping = cmp.mapping.preset.insert({
+      ['<C-Space>'] = cmp.mapping.complete(),
+      ['<CR>']      = cmp.mapping.confirm({ select = true }),
+      ['<Tab>']     = cmp.mapping.select_next_item(),
+      ['<S-Tab>']   = cmp.mapping.select_prev_item(),
+      ['<C-e>']     = cmp.mapping.abort(),
+      ['<C-d>']     = cmp.mapping.scroll_docs(4),
+      ['<C-u>']     = cmp.mapping.scroll_docs(-4),
+    }),
+    sources = cmp.config.sources({
+      { name = 'nvim_lsp' },
+      { name = 'buffer' },
+      { name = 'path' },
+    }),
+  })
+end
+
+-- ── LSP on_attach (keybindings set per buffer) ────────────────────────────
+local lsp_on_attach = function(client, bufnr)
+  local opts = { noremap = true, silent = true, buffer = bufnr }
+  vim.keymap.set('n', 'gd',          vim.lsp.buf.definition,    opts)
+  vim.keymap.set('n', 'gD',          vim.lsp.buf.declaration,   opts)
+  vim.keymap.set('n', 'gr',          vim.lsp.buf.references,    opts)
+  vim.keymap.set('n', 'gi',          vim.lsp.buf.implementation,opts)
+  vim.keymap.set('n', 'K',           vim.lsp.buf.hover,         opts)
+  vim.keymap.set('n', '<leader>rn',  vim.lsp.buf.rename,        opts)
+  vim.keymap.set('n', '<leader>ca',  vim.lsp.buf.code_action,   opts)
+  vim.keymap.set('n', '[d',          vim.diagnostic.goto_prev,  opts)
+  vim.keymap.set('n', ']d',          vim.diagnostic.goto_next,  opts)
+  -- <leader>E for diagnostics float (avoids conflict with EasyMotion <leader>e)
+  vim.keymap.set('n', '<leader>E',   vim.diagnostic.open_float, opts)
+end
+
+-- Build cmp capabilities to advertise to servers
+local capabilities = vim.lsp.protocol.make_client_capabilities()
+local ok_cmp_lsp, cmp_lsp = pcall(require, 'cmp_nvim_lsp')
+if ok_cmp_lsp then
+  capabilities = cmp_lsp.default_capabilities(capabilities)
+end
+
+-- ── clangd (C/C++) ───────────────────────────────────────────────────────
+local ok_lsp, lspconfig = pcall(require, 'lspconfig')
+if ok_lsp then
+  lspconfig.clangd.setup({
+    capabilities = capabilities,
+    on_attach    = lsp_on_attach,
+    cmd = {
+      'clangd',
+      '--background-index',
+      '--clang-tidy',
+      '--header-insertion=iwyu',
+      '--completion-style=detailed',
+    },
+  })
+end
+
+-- ── Treesitter ────────────────────────────────────────────────────────────
+local ok_ts, ts_configs = pcall(require, 'nvim-treesitter.configs')
+if ok_ts then
+  ts_configs.setup({
+    ensure_installed = { 'c', 'lua', 'vim', 'bash', 'cmake', 'make' },
+    auto_install     = true,
+    highlight        = { enable = true },
+    indent           = { enable = true },
+  })
+end
 EOF
 endif
 
@@ -339,6 +442,14 @@ function! s:ShowHelp()
     \ '  \bda  Close all buffers          \<Tab>  Tabularize (visual)',
     \ '  \r   EnMasse bulk edit           \cl  Open Claude layout',
     \ '                                   \bb  Toggle background',
+    \ '',
+    \ '  LSP (nvim only)',
+    \ '  gd   Go to definition            gD  Go to declaration',
+    \ '  gr   References                  gi  Go to implementation',
+    \ '  K    Hover docs                  \rn Rename symbol',
+    \ '  \ca  Code action                 \E  Diagnostic float',
+    \ '  [d   Prev diagnostic             ]d  Next diagnostic',
+    \ '  <Tab>/<S-Tab>  cmp next/prev     <CR> confirm completion',
     \ '',
     \ '  Press q to close',
     \ ]
