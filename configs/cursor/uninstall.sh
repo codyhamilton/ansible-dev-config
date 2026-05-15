@@ -3,5 +3,3 @@
 
 dc_bold "Removing Cursor config..."
 
-_dc_rm_file "${HOME}/.cursor/argv.json" "cursor/argv.json"
-_dc_rm_file "${HOME}/.cursor/mcp.json"  "cursor/mcp.json"

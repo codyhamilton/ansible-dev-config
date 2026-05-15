@@ -5,7 +5,3 @@ if [ ! -d "$_cursor_dir" ] && ! command -v cursor > /dev/null 2>&1; then
     return
 fi
 dc_ensure_dir "$_cursor_dir"
-
-# argv.json: sync with crash-reporter-id filter (sync direction only — strip it when syncing back)
-dc_sync argv.json "$_cursor_dir/argv.json" '/crash-reporter-id/d'
-dc_sync mcp.json  "$_cursor_dir/mcp.json"

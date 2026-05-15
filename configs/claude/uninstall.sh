@@ -3,5 +3,4 @@
 
 dc_bold "Removing Claude config..."
 
-_dc_rm_file "${HOME}/.claude/settings.json" "claude/settings.json"
 dc_skip "claude/CLAUDE.md (user-specific; not removed)"
